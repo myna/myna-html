@@ -12,6 +12,7 @@ initPlugin = function($) {
     _this = this;
   $.mynaDefaults = {
     apiRoot: "http://api.mynaweb.com",
+    debug: false,
     sticky: true,
     cookieName: "myna",
     cookieOptions: {
@@ -21,7 +22,9 @@ initPlugin = function($) {
   $.mynaLog = function() {
     var args;
     args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-    return typeof console !== "undefined" && console !== null ? typeof console.log === "function" ? console.log(args) : void 0 : void 0;
+    if ($.mynaDefaults.debug) {
+      return typeof console !== "undefined" && console !== null ? typeof console.log === "function" ? console.log(args) : void 0 : void 0;
+    }
   };
   $.mynaError = function() {
     var args;
@@ -147,18 +150,13 @@ initPlugin = function($) {
       success();
     }
   };
-  $.fn.mynaDefaultAction = function() {
-    var self;
-    self = $(this);
-    if (self.is("a")) {
-      return window.location = self.attr("href");
-    }
-  };
   $.mynaWrapHandler = function(uuid, handler) {
     $.mynaLog("wrapHandler", uuid, handler);
-    return function(evt) {
-      var stored;
+    return function() {
+      var args, evt, self, stored;
+      evt = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
       $.mynaLog("wrappedHandler", evt);
+      self = $(this);
       stored = $.mynaLoadSuggestion(uuid);
       if (stored && !stored.rewarded) {
         $.mynaLog(" - rewarding and retriggering");
@@ -167,16 +165,15 @@ initPlugin = function($) {
         $.mynaReward({
           uuid: uuid,
           success: function() {
-            return $(evt.target).trigger(evt["type"]);
+            self.trigger(evt["type"]);
           },
           error: function() {
-            return $(evt.target).trigger(evt["type"]);
+            self.trigger(evt["type"]);
           }
         });
       } else {
         $.mynaLog(" - retriggering");
-        handler(evt);
-        $(evt.target).mynaDefaultAction();
+        handler.call.apply(handler, [this, evt].concat(__slice.call(args)));
       }
     };
   };

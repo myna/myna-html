@@ -10,12 +10,14 @@ initPlugin = ($) ->
 
   $.mynaDefaults =
     apiRoot: "http://api.mynaweb.com"
+    debug: false
     sticky: true
     cookieName: "myna"
-    cookieOptions: expires: 7 # days
+    cookieOptions: expires: 7   # days
 
   $.mynaLog = (args...) =>
-    console?.log?(args)
+    if $.mynaDefaults.debug
+      console?.log?(args)
 
   $.mynaError = (args...) =>
     $.mynaLog(args...)
@@ -149,16 +151,12 @@ initPlugin = ($) ->
 
   # Event handlers ------------------------------
 
-  $.fn.mynaDefaultAction = () ->
-    self = $(this)
-
-    if self.is("a")
-      window.location = self.attr("href")
-
-  $.mynaWrapHandler = (uuid, handler) =>
+  $.mynaWrapHandler = (uuid, handler) ->
     $.mynaLog("wrapHandler", uuid, handler)
-    (evt) =>
+    (evt, args...) ->
       $.mynaLog("wrappedHandler", evt)
+
+      self = $(this)
 
       stored = $.mynaLoadSuggestion(uuid)
       if stored && !stored.rewarded
@@ -166,13 +164,16 @@ initPlugin = ($) ->
         evt.stopPropagation()
         evt.preventDefault()
         $.mynaReward
-          uuid:    uuid
-          success: () => $(evt.target).trigger(evt["type"])
-          error:   () => $(evt.target).trigger(evt["type"])
+          uuid: uuid
+          success: () ->
+            self.trigger(evt["type"])
+            return
+          error: () ->
+            self.trigger(evt["type"])
+            return
       else
         $.mynaLog(" - retriggering")
-        handler(evt)
-        $(evt.target).mynaDefaultAction()
+        handler.call(this, evt, args...)
 
       return
 
