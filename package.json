@@ -1,0 +1,56 @@
+{
+   "name": "jquery-myna",
+   "version": "0.1.0",
+   "series": "1",
+   "description": "jQuery client for Myna. See http://mynaweb.com/",
+   "homepage": "http://mynaweb.com/",
+   "keywords": [
+     "myna",
+     "multi-armed bandit",
+     "bandit",
+     "a/b testing",
+     "a/b"
+   ],
+   "maintainers": [
+     {
+       "name": "Dave Gurnell",
+       "email": "dave@mynaweb.com",
+       "web": "http://www.mynaweb.com"
+     },
+     {
+       "name": "Noel Welsh",
+       "email": "noel@mynaweb.com",
+       "web": "http://www.mynaweb.com"
+     }
+   ],
+   "contributors": [
+     {
+       "name": "Dave Gurnell",
+       "email": "dave@mynaweb.com",
+       "web": "http://www.mynaweb.com"
+     },
+     {
+       "name": "Noel Welsh",
+       "email": "noel@mynaweb.com",
+       "web": "http://www.mynaweb.com"
+     }
+   ],
+   "bugs": {
+       "mail": "dave@mynaweb.com",
+       "web": "https://github.com/myna/myna-jquery"
+   },
+   "licenses": [
+       {
+           "type": "BSD 2-Clause",
+           "url": "https://github.com/myna/myna-jquery/LICENSE.txt"
+       }
+   ],
+   "repositories": [
+       {
+           "type": "git",
+           "url": "https://github.com/myna/myna-jquery"
+       }
+   ],
+   "dependencies": {
+   }
+}

@@ -1,0 +1,28 @@
+<html>
+  <head>
+    <title>Hero demo</title>
+    <style>
+      h1 { text-align: center; }
+      img { display: block; margin: 0 auto; }
+      .signed-up { text-align: center; margin: 40px 0; }
+    </style>
+  </head>
+
+  <body>
+    <div class="signed-up">
+      Thanks for signing up!
+    </div>
+
+    <script src="../lib/jquery-1.8.2.js"></script>
+    <script src="../dist/jquery.myna.js"></script>
+    <script>
+      $.myna({
+        "experiments": [{
+          "uuid": "caf09625-335d-474e-aa45-413823cb8e0c",
+          "class": "myna",
+          "sticky": true
+        }]
+      })
+    </script>
+  </body>
+</html>
