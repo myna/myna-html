@@ -3,11 +3,12 @@ jQuery Client for Myna
 
 Copyright 2012 Myna Ltd
 
-Released under the Apache 2.0 License (see LICENSE.txt)
+Released under the [BSD 3-clause license](http://opensource.org/licenses/BSD-3-Clause).
+See [LICENSE.md](https://github.com/myna/myna-jquery/blob/master/LICENSE.md) for the full text.
 
-# What is this?!
+# What is this?
 
-This is the beta version of a simple way of setting up a Myna test without writing any Javascript.
+This is the beta version of a simple way of setting up [Myna](http://mynaweb.com) A/B tests without writing any Javascript.
 
 As soon as we've ironed out the bugs, we will update the Myna dashboard to incorporate it directly into our user experience.
 
@@ -77,8 +78,8 @@ If you have Node.js and npm installed, you should be able to the necessary tools
     npm install -g grunt
     npm install -g coffee-script
 
-The main command to build the script is then:
+The main command to build the library is then:
 
     grunt compile
 
-this creates `dist/jquery.myna.js` and `dist/jquery.myna.min.js`, which are the files you need to get started.
+which creates `dist/jquery.myna-x.y.z.js` and `dist/jquery.myna-x.y.z.min.js`.
