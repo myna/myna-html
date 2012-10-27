@@ -12,8 +12,11 @@ initPlugin = ($) ->
     apiRoot: "http://api.mynaweb.com"
     debug: false
     sticky: true
+    dataPrefix: null
     cookieName: "myna"
-    cookieOptions: expires: 7   # days
+    cookieOptions:
+      path: "/"
+      expires: 7   # days
 
   $.mynaLog = (args...) =>
     if $.mynaDefaults.debug
@@ -23,39 +26,64 @@ initPlugin = ($) ->
     $.mynaLog(args...)
     throw args
 
-  # Saving and loading suggestions --------------
+  $.fn.mynaData = (prefix, name) ->
+    return this.data(if prefix then "#{prefix}-#{name}" else name)
 
-  $.mynaSuggestions = {}
+  # Saving and loading suggestions --------------
 
   loadSuggestions = () =>
     $.mynaLog("loadSuggestions")
 
-    cookieName = $.mynaDefaults.cookieName
-
-    $.mynaLog(" - ", cookieName)
-
     try
+      cookieName = $.mynaDefaults.cookieName
+
+      savedPath = $.cookie.defaults.path
+      $.cookie.defaults.path = $.mynaDefaults.cookieOptions.path
+
+      $.mynaLog(" - ", cookieName)
+
       JSON.parse($.cookie(cookieName)) || {}
     catch exn
       {}
+    finally
+      $.cookie.defaults.path = savedPath
 
   saveSuggestions = (suggestions) =>
     $.mynaLog("saveSuggestions", suggestions)
 
-    cookieName = $.mynaDefaults.cookieName
-    cookieValue = JSON.stringify(suggestions)
-    cookieOptions = $.mynaDefaults.cookieOptions
+    try
+      cookieName = $.mynaDefaults.cookieName
+      cookieValue = JSON.stringify(suggestions)
+      cookieOptions = $.mynaDefaults.cookieOptions
 
-    $.mynaLog(" - ", cookieName, cookieValue, cookieOptions)
+      savedPath = $.cookie.defaults.path
+      $.cookie.defaults.path = $.mynaDefaults.cookieOptions.path
 
-    $.cookie(cookieName, cookieValue)
+      $.mynaLog(" - ", cookieName, cookieValue, cookieOptions)
 
-    $.mynaLog(" - ", document.cookie)
+      $.cookie(cookieName, cookieValue)
+
+      $.mynaLog(" - ", document.cookie)
+    finally
+      $.cookie.defaults.path = savedPath
 
     return
 
-  $.mynaSaveSuggestion = (uuid, choice, token, rewarded = false) =>
-    $.mynaLog("mynaSaveSuggestion", uuid, choice, token, rewarded)
+  $.clearSuggestions = () =>
+    $.mynaLog("clearSuggestions")
+
+    try
+      savedPath = $.cookie.defaults.path
+      $.cookie.defaults.path = $.mynaDefaults.cookieOptions.path
+
+      cookieName = $.mynaDefaults.cookieName
+
+      $.removeCookie(cookieName)
+    finally
+      $.cookie.defaults.path = savedPath
+
+  $.saveSuggestion = (uuid, choice, token, rewarded = false) =>
+    $.mynaLog("saveSuggestion", uuid, choice, token, rewarded)
 
     suggestions = loadSuggestions()
     suggestions[uuid] = {
@@ -67,8 +95,8 @@ initPlugin = ($) ->
 
     return
 
-  $.mynaDeleteSuggestion = (uuid) =>
-    $.mynaLog("mynaDeleteSuggestion", uuid)
+  $.deleteSuggestion = (uuid) =>
+    $.mynaLog("deleteSuggestion", uuid)
 
     suggestions = loadSuggestions()
     delete suggestions[uuid];
@@ -76,19 +104,19 @@ initPlugin = ($) ->
 
     return
 
-  $.mynaLoadSuggestion = (uuid) =>
-    $.mynaLog("mynaLoadSuggestion", uuid)
+  $.loadSuggestion = (uuid) =>
+    $.mynaLog("loadSuggestion", uuid)
     loadSuggestions()[uuid] || null
 
   # Basic suggest and reward functions ----------
 
-  $.mynaSuggest = (options) =>
+  $.suggest = (options) =>
     options = $.extend({}, $.mynaDefaults, options)
 
     success = options.success || (->)
     error   = options.error   || (->)
 
-    uuid = options.uuid || $.mynaError("mynaSuggest: no uuid")
+    uuid = options.uuid || $.mynaError("suggest: no uuid")
     url  = "#{options.apiRoot}/v1/experiment/#{uuid}/suggest"
 
     $.ajax
@@ -97,32 +125,32 @@ initPlugin = ($) ->
       crossDomain: true
       success: (data, textStatus, jqXHR) =>
         if data.typename == "suggestion"
-          $.mynaSaveSuggestion(uuid, data.choice, data.token)
+          $.saveSuggestion(uuid, data.choice, data.token)
           success(uuid: uuid, choice: data.choice, token: data.token)
         else
-          $.mynaLog("mynaSuggest received #{data.typename}", data, textStatus, jqXHR)
+          $.mynaLog("suggest received #{data.typename}", data, textStatus, jqXHR)
           error(data, textStatus, jqXHR)
         return
       error: (jqXHR, textStatus, errorThrown) =>
-        $.mynaLog("mynaSuggest received error", jqXHR, textStatus, errorThrown)
+        $.mynaLog("suggest received error", jqXHR, textStatus, errorThrown)
         error({}, textStatus, jqXHR, errorThrown)
         return
 
     return
 
-  $.mynaReward = (options) =>
+  $.reward = (options) =>
     options = $.extend({}, $.mynaDefaults, options)
 
     success = options.success || (->)
     error   = options.error   || (->)
 
-    uuid   = options.uuid || $.mynaError("mynaReward: no uuid")
-    stored = $.mynaLoadSuggestion(uuid)
+    uuid   = options.uuid || $.mynaError("reward: no uuid")
+    stored = $.loadSuggestion(uuid)
 
     if stored && !stored.rewarded
       token  = stored.token
       choice = stored.choice
-      $.mynaSaveSuggestion(uuid, choice, token, true)
+      $.saveSuggestion(uuid, choice, token, true)
 
       amount = options.amount || 1
       url    = "#{options.apiRoot}/v1/experiment/#{uuid}/reward?token=#{token}&amount=#{amount}"
@@ -133,15 +161,15 @@ initPlugin = ($) ->
         crossDomain: true
         success: (data, textStatus, jqXHR) =>
           if data.typename == "ok"
-            $.mynaLog("mynaReward received ok", data, textStatus, jqXHR)
-            $.mynaSaveSuggestion(uuid, choice, token, true)
+            $.mynaLog("reward received ok", data, textStatus, jqXHR)
+            $.saveSuggestion(uuid, choice, token, true)
             success(uuid: uuid, choice: choice, token: token, amount: amount)
           else
-            $.mynaLog("mynaReward received #{data.typename}", data, textStatus, jqXHR)
+            $.mynaLog("reward received #{data.typename}", data, textStatus, jqXHR)
           return
         error: (jqXHR, textStatus, errorThrown) =>
-          $.mynaLog("mynaReward received error", jqXHR, textStatus, errorThrown)
-          $.mynaDeleteSuggestion(uuid)
+          $.mynaLog("reward received error", jqXHR, textStatus, errorThrown)
+          $.deleteSuggestion(uuid)
           error({}, textStatus, jqXHR, errorThrown)
           return
     else
@@ -151,104 +179,134 @@ initPlugin = ($) ->
 
   # Event handlers ------------------------------
 
-  $.mynaWrapHandler = (uuid, handler) ->
+  $.wrapHandler = (uuid, handler) ->
     $.mynaLog("wrapHandler", uuid, handler)
     (evt, args...) ->
       $.mynaLog("wrappedHandler", evt)
 
-      self = $(this)
+      elem = this
+      self = $(elem)
 
-      stored = $.mynaLoadSuggestion(uuid)
+      stored = $.loadSuggestion(uuid)
       if stored && !stored.rewarded
         $.mynaLog(" - rewarding and retriggering")
         evt.stopPropagation()
         evt.preventDefault()
-        $.mynaReward
+        $.reward
           uuid: uuid
           success: () ->
-            self.trigger(evt["type"])
+            if elem[evt.type]
+              elem[evt.type]()
+            else
+              self.trigger(evt.type)
             return
           error: () ->
-            self.trigger(evt["type"])
+            if elem[evt.type]
+              elem[evt.type]()
+            else
+              self.trigger(evt.type)
             return
+        return
       else
-        $.mynaLog(" - retriggering")
-        handler.call(this, evt, args...)
-
-      return
+        $.mynaLog(" - retriggering", evt, evt.type)
+        return handler.call(this, evt, args...)
 
   $.fn.mynaClick = (uuid, args...) ->
     $.mynaLog("mynaClick", uuid, args...)
     switch args.length
       when 0
-        this.click($.mynaWrapHandler(uuid, (->)))
+        this.click($.wrapHandler(uuid, (->)))
       when 1
         handler = args[0]
-        this.click($.mynaWrapHandler(uuid, handler))
+        this.click($.wrapHandler(uuid, handler))
       else
         eventData = args[0]
         handler = args[1]
-        this.click(eventData, $.mynaWrapHandler(uuid, handler))
+        this.click(eventData, $.wrapHandler(uuid, handler))
 
   # Automatic setup -----------------------------
 
-  eachVariantAndGoal = (cssClass, handler) =>
+  eachVariantAndGoal = (cssClass, dataPrefix, handler) =>
     $(".#{cssClass}").each (index, elem) =>
       self = $(elem)
-      variant = self.data("variant")
-      goal    = self.data("goal")
-      handler.call(self, variant, goal)
+      show = self.mynaData(dataPrefix, "show")
+      bind = self.mynaData(dataPrefix, "bind")
+      goal = self.mynaData(dataPrefix, "goal")
+      handler.call(self, show, bind, goal)
 
-  showVariant = (cssClass, choice = null) =>
-    eachVariantAndGoal cssClass, (variant, goal) ->
-      if variant
-        if choice && (variant == choice)
-          this.show()
-        else
-          this.hide()
+  showVariant = (cssClass, dataPrefix, choice) =>
+    eachVariantAndGoal cssClass, dataPrefix, (show, bind, goal) ->
+      if show
+        switch show
+          when choice then this.show()
+          else this.hide()
 
-  initRewardHandlers = (uuid, cssClass) =>
-    eachVariantAndGoal cssClass, (variant, goal) ->
+      if bind
+        switch bind
+          when "text" then this.text(choice)
+          when "html" then this.html(choice)
+          else
+            match = bind.match(/@(.*)/)
+            if match
+              this.attr(match[1], choice)
+
+  # Used as a fallback in case the experiment info doesn't contain a default field.
+  # Determines a default variant from the first "data-show" attribute in the page.
+  findDefaultVariant = (cssClass, dataPrefix) =>
+    eachVariantAndGoal cssClass, dataPrefix, (show, bind, goal) ->
+      if show then return show
+    return null
+
+  initGoals = (uuid, cssClass, dataPrefix) =>
+    eachVariantAndGoal cssClass, dataPrefix, (show, bind, goal) ->
       switch goal
         when "click"
           this.mynaClick(uuid)
 
-  $.mynaInit = (options) =>
-    uuid     = options["uuid"]
-    cssClass = options["class"]
-    sticky   = options["sticky"]
+  $.initExperiment = (options) =>
+    uuid       = options["uuid"]
+    cssClass   = options["class"]
+    sticky     = options["sticky"]
+    dataPrefix = options["dataPrefix"]
 
     if !uuid || !cssClass
-      $.mynaLog("mynaInit: no uuid or CSS class", uuid, cssClass)
+      $.mynaLog("initExperiment: no uuid or CSS class", options, uuid, cssClass, sticky)
       return
 
-    stored = $.mynaLoadSuggestion(uuid)
+    stored = $.loadSuggestion(uuid)
 
-    $.mynaLog("mynaInit", uuid, cssClass, sticky, stored)
+    $.mynaLog("initExperiment", uuid, cssClass, sticky, stored?.choice, stored?.token, stored?.rewarded)
 
-    if stored && (sticky || !stored.rewarded)
+    if sticky && stored
       $.mynaLog(" - recalling suggestion", stored.choice)
-      showVariant(cssClass, stored.choice)
-      initRewardHandlers(uuid, cssClass)
+      showVariant(cssClass, dataPrefix, stored.choice)
+      initGoals(uuid, cssClass, dataPrefix)
     else
       $.mynaLog(" - fetching suggestion")
-      $.mynaSuggest
+      $.suggest
         uuid: uuid
         success: (data) =>
-          showVariant(cssClass, data.choice)
-          initRewardHandlers(uuid, cssClass)
+          showVariant(cssClass, dataPrefix, data.choice)
+          initGoals(uuid, cssClass, dataPrefix)
           return
         error: () =>
-          showDefaultVariant(cssClass)
+          variant = options["default"] || findDefaultVariant(cssClass, dataPrefix)
+          if variant then showVariant(cssClass, dataPrefix, variant)
           return
 
     return
 
-  $.myna = (options) =>
+  $.initNow = (options) =>
     options = $.extend({}, $.mynaDefaults, options)
-    $.mynaLog("myna", options)
+    $.mynaLog("myna", options, options.experiments)
     $.each options.experiments, (index, exptOptions) =>
-      exptOptions = $.extend({ sticky: options.sticky }, exptOptions)
-      $.mynaInit(exptOptions)
+      $.mynaLog(" - ", exptOptions)
+      exptOptions = $.extend({ dataPrefix: options.dataPrefix, sticky: options.sticky }, exptOptions)
+      $.initExperiment(exptOptions)
 
-initPlugin(window.jQuery, window, document)
+  $.init = (options) =>
+    $(document).ready(() => $.initNow(options))
+
+  return $.noConflict()
+
+window.Myna = initPlugin(window.jQuery, window, document)

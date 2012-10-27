@@ -1,73 +1,162 @@
-jQuery Client for Myna
-======================
+Myna for HTML
+=============
 
 Copyright 2012 Myna Ltd
 
 Released under the [BSD 3-clause license](http://opensource.org/licenses/BSD-3-Clause).
 See [LICENSE.md](https://github.com/myna/myna-jquery/blob/master/LICENSE.md) for the full text.
 
-# What is this?
+# What is *Myna for HTML*?
 
-This is the beta version of a simple way of setting up [Myna](http://mynaweb.com) A/B tests without writing any Javascript.
+It's simple way of creating [Myna](http://mynaweb.com) A/B tests without writing any custom Javascript code. All you need are HTML and CSS.
 
-As soon as we've ironed out the bugs, we will update the Myna dashboard to incorporate it directly into our user experience.
+Our aim is to integrate this functionality into the Myna dashboard. When you create an experiment, we'll give you a code snippet to copy-and-paste into your web page. Once that's done, you can configure the rest of the experiment using pure HTML and CSS. No Javascript required.
 
-# Getting started
+<!-- There are some live demos of running on the [Myna web site](http://mynaweb.com/demo/html5). -->
 
-You can set up an experiment with the following easy steps. Expect these steps to get much simpler once build this into the Myna dashboard:
+# How does it work?
 
- 1. Grab a copy of `jquery.myna.js` and place it somewhere on your web site
+## Getting started
 
- 2. Paste the following code just before the end of your `<head>` tag:
+Very soon we will update the dashboard on Myna to allow you to copy-and-paste a snippet of code into your web page to get you started. Here's an example:
 
-        <script src="/path/to/jquery.myna.js"></script>
-        <script type="text/javascript">
-          $.myna({
-            "experiments": [{
-              "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-              "class": "myna",
-              "sticky": true
-            }]
-          })
-        </script>
+    <!-- Start of Myna integration -->
+    <script src="http://cdn.mynaweb.com/clients/myna-html-0.latest.min.js"></script>
 
- 3. Replace `/path/to/jquery.myna.js` with the correct path to `jquery.myna.js`
+    <script type="text/javascript">
+      Myna.init({ "experiments": [
+        { "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "class": "myna" }
+      ]})
+    </script>
+    <!-- End of Myna integration -->
 
- 4. Replace `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa` with the UUID of your experiment
+You can try this now by copying-and-pasting this code into a web page of your own. The text `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa` needs to be replaced by the UUID of your experiment. We'll eventually do this for you as part of the Myna dashboard.
 
- 5. Set up your variants. Variants are created by showing and hiding parts of your
-    page. Simply add the CSS class `myna` to each variant and tag it with an HTML 5
-    data attribute: `data-variant="name-of-the-relevant-variant"`. Here's an example:
+This code snippet associates your experiment with a CSS class, in this case `myna`. All you need to do is tag the different parts of your variants and conversion goals with the same CSS class. *Myna for HTML* does the rest for you.
 
-        <img src="hero1.jpg" class="myna" data-variant="variant1">
+## Designing your variants
 
- 6. Set up your goals. Goals are things you want your user to click on (other types
-    of action aren't yet supported). Simply add the CSS class `myna` to your goal
-    links and buttons, and add the attribute `data-goal="click"`. Here's an example:
+*Myna for HTML* lets you do design variants in two ways:
 
-         <a href="http://example.com" class="myna" data-goal="click">Click me</a>
+ 1. You can alter large parts of a page by showing and hiding different HTML elements in each variant.
+    This is done with the `data-show` HTML data attribute.
 
-That's it - you're done! Whenever a new user visits your page, one of your variants will be selected by Myna. When the user clicks your goal links or buttons, Myna will be rewarded. It's that simple.
+ 2. You can make minor tweaks by using the name of a variant as the text, HTML,
+    or an attribute value in an element. This is done with the data-bind` HTML data attribute.
 
-# Spanning multiple pages
+### Showing and hiding HTML elements
 
-You can easily set up experiments that span multiple pages. Paste the content from steps 2 to 4 above into each relevant page, and tag your variants and goals accordingly.
+Let's say you want to test different variants of a hero image. One way of doing this is to include every variant of the image in your page and hide them all except one. Here's how you do it:
 
-# Sticky and non-sticky experiments
+ 1. Add the images to your page:
 
-By default, experiments are *sticky*. This means each visitor will always see the same variant of your page, and each variant will only be rewarded once for each visitor.
+        <img src="hero1.jpg">
+        <img src="hero2.jpg">
+        <img src="hero3.jpg">
 
-You can increase the rate at which you gather data by creating a *non-sticky* experiment. You can do this by setting the `sticky` property in the copy-and-paste code to `false`. Every time the page is loaded, a new variant will be requested from Myna.
+ 2. Tag each image with the CSS class for your experiment:
 
-Note that non-sticky experiments only work if they are confined to a single page.
+        <img class="myna" src="hero1.jpg">
+        <img class="myna" src="hero2.jpg">
+        <img class="myna" src="hero3.jpg">
 
-# Documentation
+ 3. Add a `data-show` attribute to each image containing the name of one of the variants
+    from your Myna dashboard:
 
-There isn't any documentation yet beyond this README file.
+        <img class="myna" data-show="variant1" src="hero1.jpg">
+        <img class="myna" data-show="variant2" src="hero2.jpg">
+        <img class="myna" data-show="variant3" src="hero3.jpg">
 
-# Demo
+**Pro tip:** You may want to use CSS to hide the images by default or fix the size of a container to avoid unwanted pop-in while your page is loading.
 
-There aren't any live demos yet. We're working on them.
+### Changing the content of an element
+
+Another common option for changing the content on your page is to test a small piece of copy such as a link, button label or article title. Here's how you do this for a link:
+
+ 1. Add the link to your page:
+
+        <a href="goal.html">Sign up now!</a>
+
+ 2. Tag the link with the CSS class for your experiment:
+
+        <a class="myna" href="goal.html">Sign up now!</a>
+
+ 3. Add a `data-bind` attribute to the link:
+
+        <a class="myna" data-bind="text" href="goal.html">Sign up now!</a>
+
+    This uses the names of the variants on your Myna dashboard as the content of the element.
+
+**Pro tip:** There are two possible values of `data-bind` that differ in the way they treat special HTML characters such as `<`, `>`, `&` and `"`:
+
+ - `data-bind="text"` interprets special characters as parts of the visible text by *escaping* them to their HTML entity forms: `<` becomes `&lt;`, `&` becomes `&amp;` and so on;
+
+ - `data-bind="html"` treats special characters as HTML, allowing you to write HTML tags in your variant names: `<b>` means *bold* and so on.
+
+### Changing the style of an element
+
+Sometimes you may want to vary the CSS styles on your page in addition to or instead of your content. You can do this as follows:
+
+ 1. Add the element to your page:
+
+        <div>...</div>
+
+ 2. Tag the element with the CSS class for your experiment:
+
+        <div class="myna">...</div>
+
+ 3. Add a `data-bind` attribute to the element:
+
+        <div class="myna" data-bind="@class">...</div>
+
+    This uses the names of the variants on your Myna dashboard as the CSS class of the element.
+
+**Note:** This approach *replaces* any existing classes on the element with the variant from Myna, *including* the `myna` class from step 2 above. This won't affect the operation of Myna, but may cause unintended side-effects if you're not expecting it.
+
+**Pro tip:** You can change any attribute on an HTML tag instead of the CSS `class`: simply replace `@class` with an `@` sign and the name of the attribute. For example:
+
+    <img class="myna" data-bind="@src" src="default.png">
+
+# Tweaking the setup
+
+## Sticky variants
+
+By default, *Myna for HTML* uses a feature called *sticky variants*. Every visitor to your site is assigned a variant that stays with them for the duration of their stay. In addition, we only reward Myna the *first* time the user converts. Sticky variants provide two benefits:
+
+ 1. they ensure each visitor receives a consistent user experience;
+
+ 2. they ensure your results are not skewed by a single visitor repeatedly performing the same action.
+
+Sticky variants accumulate one data point per unique visitor to your site. You can optionally switch off stickiness to collect one data point per page view (lots faster). However, bear the following in mind:
+
+ 1. Deactivating sticky variants will cause Myna to load a new variant on every page view. It is therefore
+    only suitable for small tweaks that will not confuse your visitors.
+
+ 2. Non-sticky experiments cannot be run across web pages. Deactivating sticky variants is only appropriate
+    if your entire experiment is contained on a single page.
+
+You can deactivate sticky variants for an experiment by adding a `sticky: false` parameter to the copy-and-paste code snippet on your page:
+
+    Myna.init({ "experiments": [
+      { "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "class": "myna", "sticky": false }
+    ]})
+
+## Cookies
+
+TODO - Complete this. Notes:
+
+ - We use cookies as a temporary data store.
+
+ - The cookies store the following for each experiment on your site:
+    - the experiment UUID
+    - the last suggestion made
+    - a flag to record whether the suggestion has been rewarded yet
+    - an internal response token used to reward the variant on Myna
+
+ - By default, cookies are scoped to the current domain and the path `/`.
+   This is configurable, e.g. for experiments that run across subdomains.
+
+ - Cookies are used to implement sticky variants. The default lifetime is 7 days.
 
 # Building the code
 
@@ -82,4 +171,4 @@ The main command to build the library is then:
 
     grunt compile
 
-which creates `dist/jquery.myna-x.y.z.js` and `dist/jquery.myna-x.y.z.min.js`.
+which creates `dist/myna-html-x.y.z.js` and `dist/myna-html-x.y.z.min.js`.

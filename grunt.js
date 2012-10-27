@@ -11,11 +11,21 @@ module.exports = function(grunt) {
     },
     concat: {
       dist: {
-        src: [ 'lib/json2.js', 'lib/jquery.cookie.js', 'temp/myna.js' ],
+        src: [
+          'lib/jquery-1.8.2.js',
+          'lib/json2.js',
+          'lib/jquery.cookie.js',
+          'temp/myna.js'
+        ],
         dest: 'dist/<%= pkg.name %>-<%= pkg.version %>.js'
       },
       latest: {
-        src: [ 'lib/json2.js', 'lib/jquery.cookie.js', 'temp/myna.js' ],
+        src: [
+          'lib/jquery-1.8.2.js',
+          'lib/json2.js',
+          'lib/jquery.cookie.js',
+          'temp/myna.js'
+        ],
         dest: 'dist/<%= pkg.name %>-<%= pkg.series %>.latest.js'
       }
     },
