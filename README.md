@@ -23,7 +23,7 @@ Very soon we will update the dashboard on Myna to allow you to copy-and-paste a 
     <!-- Start of Myna integration -->
     <script src="http://cdn.mynaweb.com/clients/myna-html-0.latest.min.js"></script>
 
-    <script type="text/javascript">
+    <script>
       Myna.init({ "experiments": [
         { "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "class": "myna" }
       ]})
