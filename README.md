@@ -14,7 +14,7 @@ Our aim is to integrate this functionality into the Myna dashboard. When you cre
 
 <!-- There are some live demos of running on the [Myna web site](http://mynaweb.com/demo/html5). -->
 
-# How does it work?
+# How do I use it?
 
 ## Getting started
 
@@ -117,9 +117,65 @@ Sometimes you may want to vary the CSS styles on your page in addition to or ins
 
     <img class="myna" data-bind="@src" src="default.png">
 
-# Tweaking the setup
+## Specifying conversion goals
 
-## Sticky variants
+*Conversion goals* are actions you want your visitors to do, For example signing up to your mailing list or filling in your contact form. *Myna for HTML* identifies conversions as specific events such as clicks or page loads.
+
+### Click goals
+
+The most common type of conversion goal is a click of a link or button. You can set these up as follows:
+
+ 1. Add the element to your page, It can be a link or button or any other type of element:
+
+        <a href="goal.html">Click here</a>
+
+ 2. Tag the element with the CSS class for your experiment:
+
+        <a class="myna" href="goal.html">Click here</a>
+
+ 3. Add a `data-goal` attribute to the element:
+
+        <a class="myna" data-goal="click" href="goal.html">Click here</a>
+
+    A reward will be send to Myna whenever a user clicks this button after a suggestion is made.
+
+### Page load goals
+
+TODO: This feature isn't implemented yet - if you're badly in need of it, [get in touch](https://mynaweb.com/about/contact) and let us know. Watch this space for updates!
+
+## Tweaking the setup
+
+### CSS class names
+
+TODO - Complete this. Notes:
+
+ - *Myna for HTML* expects each experiment to be bound to a different CSS class.
+
+ - This is what the "class": "foo" option does in the copy-and-paste snippet:
+
+        Myna.init({ "experiments": [
+          { "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "class": "myna" }
+        ]})
+
+ - You can change this CSS class to whatever you want. Remember that all variants and goals for this experiment must be tagged with the same class.
+
+### Multiple experiments on a page
+
+TODO - Complete this. Notes:
+
+ - You can have multiple experiments running on the same page.
+
+ - Add the extra experiments to the copy-and-paste snippet from the Dashboard:
+
+        Myna.init({ "experiments": [
+          { "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "class": "experiment1" },
+          { "uuid": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "class": "experiment2" },
+          { "uuid": "cccccccc-cccc-cccc-cccc-cccccccccccc", "class": "experiment3" }
+        ]})
+
+ - Make sure you give each experiment a different CSS class name, and make sure each experiment except the last is followed by a comma.
+
+### Sticky variants
 
 By default, *Myna for HTML* uses a feature called *sticky variants*. Every visitor to your site is assigned a variant that stays with them for the duration of their stay. In addition, we only reward Myna the *first* time the user converts. Sticky variants provide two benefits:
 
@@ -141,7 +197,7 @@ You can deactivate sticky variants for an experiment by adding a `sticky: false`
       { "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "class": "myna", "sticky": false }
     ]})
 
-## Cookies
+### Cookies
 
 TODO - Complete this. Notes:
 
@@ -158,7 +214,9 @@ TODO - Complete this. Notes:
 
  - Cookies are used to implement sticky variants. The default lifetime is 7 days.
 
-# Building the code
+# Contributing to the library
+
+We welcome contributions and bug fixes from the community, although we have to make sure our documentation and dashboard integration remain up-to-date and bug free. If you would like to add new features to *Myna for HTML*, please [get in touch](https://mynaweb.com/about/contact) and let us know.
 
 This project is written in [Coffeescript](http://coffeescript.org) and uses the [Grunt](https://github.com/cowboy/grunt) build tool. See the respective web sites for full manuals and installation instructions.
 
