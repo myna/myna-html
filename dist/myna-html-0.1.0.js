@@ -10014,7 +10014,7 @@ initPlugin = function($) {
   var eachVariantAndGoal, findDefaultVariant, initGoals, loadSuggestions, saveSuggestions, showVariant,
     _this = this;
   $.mynaDefaults = {
-    apiRoot: "http://api.mynaweb.com",
+    apiRoot: "//api.mynaweb.com",
     debug: false,
     sticky: true,
     dataPrefix: null,

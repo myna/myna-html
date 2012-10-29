@@ -9,7 +9,7 @@ initPlugin = ($) ->
   # Defaults, logging, and errors ---------------
 
   $.mynaDefaults =
-    apiRoot: "http://api.mynaweb.com"
+    apiRoot: "//api.mynaweb.com"
     debug: false
     sticky: true
     dataPrefix: null
