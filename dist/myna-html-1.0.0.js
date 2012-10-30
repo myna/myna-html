@@ -10015,7 +10015,7 @@ initPlugin = function($) {
     _this = this;
   $.mynaDefaults = {
     apiRoot: "//api.mynaweb.com",
-    debug: false,
+    debug: true,
     sticky: true,
     dataPrefix: null,
     cookieName: "myna",
@@ -10215,20 +10215,20 @@ initPlugin = function($) {
       }
     };
   };
-  $.fn.mynaClick = function() {
-    var args, eventData, handler, uuid;
-    uuid = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-    $.mynaLog.apply($, ["mynaClick", uuid].concat(__slice.call(args)));
+  $.fn.mynaOn = function() {
+    var args, eventData, eventType, handler, uuid;
+    eventType = arguments[0], uuid = arguments[1], args = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
+    $.mynaLog.apply($, ["mynaOn", eventType, uuid].concat(__slice.call(args)));
     switch (args.length) {
       case 0:
-        return this.click($.wrapHandler(uuid, (function() {})));
+        return this.on(eventType, $.wrapHandler(uuid, (function() {})));
       case 1:
         handler = args[0];
-        return this.click($.wrapHandler(uuid, handler));
+        return this.on(eventType, $.wrapHandler(uuid, handler));
       default:
         eventData = args[0];
         handler = args[1];
-        return this.click(eventData, $.wrapHandler(uuid, handler));
+        return this.on(eventType, null, eventData, $.wrapHandler(uuid, handler));
     }
   };
   eachVariantAndGoal = function(cssClass, dataPrefix, handler) {
@@ -10259,6 +10259,8 @@ initPlugin = function($) {
             return this.text(choice);
           case "html":
             return this.html(choice);
+          case "class":
+            return this.addClass(choice);
           default:
             match = bind.match(/@(.*)/);
             if (match) {
@@ -10280,7 +10282,11 @@ initPlugin = function($) {
     return eachVariantAndGoal(cssClass, dataPrefix, function(show, bind, goal) {
       switch (goal) {
         case "click":
-          return this.mynaClick(uuid);
+          return this.mynaOn("click", uuid);
+        case "load":
+          if (this.is("html,body")) {
+            return $(window).mynaOn("load", uuid);
+          }
       }
     });
   };

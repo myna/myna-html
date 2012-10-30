@@ -21,7 +21,7 @@ Our aim is to integrate this functionality into the Myna dashboard. When you cre
 Very soon we will update the dashboard on Myna to allow you to copy-and-paste a snippet of code into your web page to get you started. Here's an example:
 
     <!-- Start of Myna integration -->
-    <script src="http://cdn.mynaweb.com/clients/myna-html-0.latest.min.js"></script>
+    <script src="http://cdn.mynaweb.com/clients/myna-html-1.latest.min.js"></script>
 
     <script>
       Myna.init({ "experiments": [

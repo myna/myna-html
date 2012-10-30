@@ -211,18 +211,18 @@ initPlugin = ($) ->
         $.mynaLog(" - retriggering", evt, evt.type)
         return handler.call(this, evt, args...)
 
-  $.fn.mynaClick = (uuid, args...) ->
-    $.mynaLog("mynaClick", uuid, args...)
+  $.fn.mynaOn = (eventType, uuid, args...) ->
+    $.mynaLog("mynaOn", eventType, uuid, args...)
     switch args.length
       when 0
-        this.click($.wrapHandler(uuid, (->)))
+        this.on(eventType, $.wrapHandler(uuid, (->)))
       when 1
         handler = args[0]
-        this.click($.wrapHandler(uuid, handler))
+        this.on(eventType, $.wrapHandler(uuid, handler))
       else
         eventData = args[0]
         handler = args[1]
-        this.click(eventData, $.wrapHandler(uuid, handler))
+        this.on(eventType, null, eventData, $.wrapHandler(uuid, handler))
 
   # Automatic setup -----------------------------
 
@@ -243,8 +243,9 @@ initPlugin = ($) ->
 
       if bind
         switch bind
-          when "text" then this.text(choice)
-          when "html" then this.html(choice)
+          when "text"  then this.text(choice)
+          when "html"  then this.html(choice)
+          when "class" then this.addClass(choice)
           else
             match = bind.match(/@(.*)/)
             if match
@@ -261,7 +262,9 @@ initPlugin = ($) ->
     eachVariantAndGoal cssClass, dataPrefix, (show, bind, goal) ->
       switch goal
         when "click"
-          this.mynaClick(uuid)
+          this.mynaOn("click", uuid)
+        when "load"
+          if this.is("html,body") then $(window).mynaOn("load", uuid)
 
   $.initExperiment = (options) =>
     uuid       = options["uuid"]
