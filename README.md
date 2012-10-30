@@ -41,13 +41,17 @@ The snippet associates your experiment with a CSS class, in this case `myna`. Al
 
 *Myna for HTML* lets you do design variants in two ways:
 
- 1. You can alter large parts of a page by showing and hiding different HTML elements in each variant.
-    This is done with the `data-show` HTML data attribute.
+ 1. You can alter large blocks of content by showing and hiding different HTML elements in each variant.
 
- 2. You can make minor tweaks by using the name of a variant as the text, HTML,
-    or an attribute value in an element. This is done with the data-bind` HTML data attribute.
+ 2. You can restyle elements by using your variant names as CSS classes or element IDs.
 
-### Showing and hiding HTML elements
+ 3. You can alter small snippets of text (links, button labels) by using the variant names as content.
+
+ 4. You can use variant names as attributes on certain elements, for example the `src` of an image or iframe.
+
+Each technique is described in detail below.
+
+### Showing and hiding content
 
 Let's say you want to test different variants of a hero image. One way of doing this is to include every variant of the image in your page and hide them all except one. Here's how you do it:
 
@@ -72,33 +76,9 @@ Let's say you want to test different variants of a hero image. One way of doing 
 
 **Pro tip:** You may want to use CSS to hide the images by default or fix the size of a container to avoid unwanted pop-in while your page is loading.
 
-### Changing the content of an element
+### Restyling content
 
-Another common option for changing the content on your page is to test a small piece of copy such as a link, button label or article title. Here's how you do this for a link:
-
- 1. Add the link to your page:
-
-        <a href="goal.html">Sign up now!</a>
-
- 2. Tag the link with the CSS class for your experiment:
-
-        <a class="myna" href="goal.html">Sign up now!</a>
-
- 3. Add a `data-bind` attribute to the link:
-
-        <a class="myna" data-bind="text" href="goal.html">Sign up now!</a>
-
-    This uses the names of the variants on your Myna dashboard as the content of the element.
-
-**Pro tip:** There are two possible values of `data-bind` that differ in the way they treat special HTML characters such as `<`, `>`, `&` and `"`:
-
- - `data-bind="text"` interprets special characters as parts of the visible text by *escaping* them to their HTML entity forms: `<` becomes `&lt;`, `&` becomes `&amp;` and so on;
-
- - `data-bind="html"` treats special characters as HTML, allowing you to write HTML tags in your variant names: `<b>` means *bold* and so on.
-
-### Changing the style of an element
-
-You may want to vary the CSS styles on your page in addition to or instead of your content. You can do this as follows:
+You may want to vary the style of an element in addition to or instead of its content. You can do this as follows:
 
  1. Add the element to your page:
 
@@ -112,9 +92,37 @@ You may want to vary the CSS styles on your page in addition to or instead of yo
 
         <div class="myna" data-bind="class">...</div>
 
-    This adds the name of a variant from your Myna dashboard as a new CSS class on the element.
+The name of one of your variants is added as a new CSS class on the element. For example, if you have a variant called `idea1`, you might end up showing an element that looks like this:
 
-### Changing an attribute of an element
+    <div class="myna idea1">...</div>
+
+### Changing links or button labels
+
+If you want to test a small piece of content such as a link, button label or article title, you can simply store the content in the name of your variant. Here's how you do this for a link:
+
+ 1. Add the link to your page:
+
+        <a href="goal.html">Sign up now!</a>
+
+ 2. Tag the link with the CSS class for your experiment:
+
+        <a class="myna" href="goal.html">Sign up now!</a>
+
+ 3. Add a `data-bind` attribute to the link:
+
+        <a class="myna" data-bind="text" href="goal.html">Sign up now!</a>
+
+This uses the names of the variants on your Myna dashboard as the content of the element. For example, if one of your variants is called `Click here for information`, you might end up with a link that looks like this:
+
+    <a class="myna" href="goal.html">Click here for information</a>
+
+**Pro tip:** There are two values of `data-bind` for rewriting content. The two versions differ in the way they treat special HTML characters such as `<`, `>`, `&` and `"`:
+
+ - `data-bind="text"` interprets special characters as parts of the visible text by *escaping* them to their HTML entity forms: `<` becomes `&lt;`, `&` becomes `&amp;` and so on;
+
+ - `data-bind="html"` treats special characters as HTML, allowing you to write HTML tags in your variant names: `<b>` means *bold* and so on.
+
+### Changing HTML attributes
 
 You may want to vary the value of an element attribute such as the `src` of an image or or iframe. You can do this as follows:
 
@@ -136,7 +144,13 @@ You may want to vary the value of an element attribute such as the `src` of an i
 
 ## Specifying conversion goals
 
-*Conversion goals* are actions you want your visitors to do, For example signing up to your mailing list or filling in your contact form. *Myna for HTML* identifies conversions as specific events such as clicks or page loads.
+*Conversion goals* are actions you want your visitors to do such as signing up to your mailing list or filling in your contact form. You can set up two types of conversion goal using *Myna for HTML*:
+
+ 1. Record a conversion when a user clicks on a link, button, or other HTML element.
+
+ 2. Record a conversion when a user visits a particular web page.
+
+These goal types are described in more detail below.
 
 ### Click goals
 
@@ -174,7 +188,9 @@ Another common type of conversion goal is for the user to reach a specific page 
 
 ## Tweaking the setup
 
-### CSS class names
+By now you know everything you need to use *Myna for HTML*. However, there are a number of extra options to tweak things under the hood. Everything below is for power users!
+
+### Experiment CSS classes
 
 The Myna dashboard suggests `myna` as the default CSS class for your experiment. You may need to change this if you are already using this class for something else, or if you are running multiple experiments on the same page (see below).
 
@@ -206,23 +222,23 @@ Although the Myna dashboard does not yet provide code snippets for this, it is p
 
  5. Make sure the `"default"` fields are set to a variant name from the dashboard for each experiment.
 
-### Sticky variants
+### Sticky experiments
 
-By default, *Myna for HTML* uses a feature called *sticky variants*. Every visitor to your site is assigned a variant that stays with them for the duration of their stay. In addition, we only reward Myna the *first* time the user converts. Sticky variants provide two benefits:
+By default, *Myna for HTML* uses a feature called *sticky experiments*. Every visitor to your site is assigned a variant that stays with them for the duration of their stay. In addition, we only reward Myna the *first* time the user converts. Sticky experiments provide two benefits:
 
  1. they ensure each visitor receives a consistent user experience;
 
  2. they ensure your results are not skewed by a single visitor repeatedly performing the same action.
 
-Sticky variants accumulate one data point per unique visitor to your site. You can optionally switch off stickiness to collect one data point per page view (lots faster). However, bear the following in mind:
+Sticky experiments accumulate one data point per unique visitor to your site. You can optionally switch off stickiness to collect one data point per page view (lots faster). However, bear the following in mind:
 
- 1. Deactivating sticky variants will cause Myna to load a new variant on every page view. It is therefore
+ 1. Deactivating sticky experiments will cause Myna to load a new variant on every page view. It is therefore
     only suitable for small tweaks that will not confuse your visitors.
 
- 2. Non-sticky experiments cannot be run across web pages. Deactivating sticky variants is only appropriate
+ 2. Non-sticky experiments cannot be run across web pages. Deactivating sticky experiments is only appropriate
     if your entire experiment is contained on a single page.
 
-You can deactivate sticky variants for an experiment by adding a `sticky: false` parameter to the copy-and-paste code snippet on your page:
+You can deactivate sticky experiments for an experiment by adding a `sticky: false` parameter to the copy-and-paste code snippet on your page:
 
     Myna.init({ "experiments": [
       { "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "class": "myna", "sticky": false }
