@@ -4,7 +4,7 @@ Myna for HTML
 Copyright 2012 Myna Ltd
 
 Released under the [BSD 3-clause license](http://opensource.org/licenses/BSD-3-Clause).
-See [LICENSE.md](https://github.com/myna/myna-jquery/blob/master/LICENSE.md) for the full text.
+See [LICENSE.md](https://github.com/myna/myna-html/blob/master/LICENSE.md) for the full text.
 
 # What is *Myna for HTML*?
 
@@ -12,7 +12,7 @@ It's simple way of creating [Myna](http://mynaweb.com) A/B tests without writing
 
 Our aim is to integrate this functionality into the Myna dashboard. When you create an experiment, we'll give you a code snippet to copy-and-paste into your web page. Once that's done, you can configure the rest of the experiment using pure HTML and CSS. No Javascript required.
 
-<!-- There are some live demos of running on the [Myna web site](http://mynaweb.com/demo/html5). -->
+There are some live demos of running on the [Myna web site](http://mynaweb.com/demo/html).
 
 # How do I use it?
 
@@ -25,14 +25,17 @@ Very soon we will update the dashboard on Myna to allow you to copy-and-paste a 
 
     <script>
       Myna.init({ "experiments": [
-        { "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "class": "myna" }
+        { "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "class": "myna", "default": "variant1" }
       ]})
     </script>
     <!-- End of Myna integration -->
 
-You can try this now by copying-and-pasting this code into a web page of your own. The text `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa` needs to be replaced by the UUID of your experiment. We'll eventually do this for you as part of the Myna dashboard.
+You can try this now by copying-and-pasting this code into a web page of your own. You'll need to customise the following:
 
-This code snippet associates your experiment with a CSS class, in this case `myna`. All you need to do is tag the different parts of your variants and conversion goals with the same CSS class. *Myna for HTML* does the rest for you.
+ - replace `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa` with the UUID of your experiment;
+ - replace `variant1` with the name of one of the variants from your experiment.
+
+The snippet associates your experiment with a CSS class, in this case `myna`. All you need to do is tag the different parts of your variants and conversion goals with the same CSS class. Our code automagically adds all of the Myna goodness to your page.
 
 ## Designing your variants
 
@@ -95,7 +98,7 @@ Another common option for changing the content on your page is to test a small p
 
 ### Changing the style of an element
 
-Sometimes you may want to vary the CSS styles on your page in addition to or instead of your content. You can do this as follows:
+You may want to vary the CSS styles on your page in addition to or instead of your content. You can do this as follows:
 
  1. Add the element to your page:
 
@@ -107,15 +110,29 @@ Sometimes you may want to vary the CSS styles on your page in addition to or ins
 
  3. Add a `data-bind` attribute to the element:
 
-        <div class="myna" data-bind="@class">...</div>
+        <div class="myna" data-bind="class">...</div>
 
-    This uses the names of the variants on your Myna dashboard as the CSS class of the element.
+    This adds the name of a variant from your Myna dashboard as a new CSS class on the element.
 
-**Note:** This approach *replaces* any existing classes on the element with the variant from Myna, *including* the `myna` class from step 2 above. This won't affect the operation of Myna, but may cause unintended side-effects if you're not expecting it.
+### Changing an attribute of an element
 
-**Pro tip:** You can change any attribute on an HTML tag instead of the CSS `class`: simply replace `@class` with an `@` sign and the name of the attribute. For example:
+You may want to vary the value of an element attribute such as the `src` of an image or or iframe. You can do this as follows:
 
-    <img class="myna" data-bind="@src" src="default.png">
+ 1. Add the element to your page:
+
+        <img src="placeholder.jpg">
+
+ 2. Tag the element with the CSS class for your experiment:
+
+        <img class="myna" src="placeholder.jpg">
+
+ 3. Add a `data-bind` attribute to the element:
+
+        <img class="myna" data-bind="@src" src="placeholder.jpg">
+
+    This replaces `placeholder.jpg` with the name of a variant from your Myna dashboard.
+
+**Pro tip:** You can use `data-bind="@foo"` with any attribute of any element. You are only limited by your imagination (and the HTML spec).
 
 ## Specifying conversion goals
 
@@ -123,7 +140,7 @@ Sometimes you may want to vary the CSS styles on your page in addition to or ins
 
 ### Click goals
 
-The most common type of conversion goal is a click of a link or button. You can set these up as follows:
+One common type of conversion goal is a click of a link or button. You can set these up as follows:
 
  1. Add the element to your page, It can be a link or button or any other type of element:
 
@@ -141,39 +158,53 @@ The most common type of conversion goal is a click of a link or button. You can 
 
 ### Page load goals
 
-TODO: This feature isn't implemented yet - if you're badly in need of it, [get in touch](https://mynaweb.com/about/contact) and let us know. Watch this space for updates!
+Another common type of conversion goal is for the user to reach a specific page such as a *sign up complete* message. You can set these up as follows:
+
+ 1. Tag the `<body>` or `<html>` tag of your page with the CSS class for your experiment:
+
+        <body class="myna">
+
+ 3. Add a `data-goal` attribute to the element:
+
+        <body class="myna" data-goal="load">
+
+    A reward will be send to Myna whenever a user loads this page after a suggestion is made.
+
+**Pro tip:** If you are using this approach, it is likely that your goal page is different from the page you are testing with Myna. You need to copy and paste the code snippet into *both* pages for this approach to work.
 
 ## Tweaking the setup
 
 ### CSS class names
 
-TODO - Complete this. Notes:
+The Myna dashboard suggests `myna` as the default CSS class for your experiment. You may need to change this if you are already using this class for something else, or if you are running multiple experiments on the same page (see below).
 
- - *Myna for HTML* expects each experiment to be bound to a different CSS class.
+To change the CSS class for your experiment, simply change the
 
- - This is what the "class": "foo" option does in the copy-and-paste snippet:
-
-        Myna.init({ "experiments": [
-          { "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "class": "myna" }
-        ]})
+    Myna.init({ "experiments": [
+      { "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "class": "myna", "default": "variant1" }
+    ]})
 
  - You can change this CSS class to whatever you want. Remember that all variants and goals for this experiment must be tagged with the same class.
 
 ### Multiple experiments on a page
 
-TODO - Complete this. Notes:
+Although the Myna dashboard does not yet provide code snippets for this, it is possible to run multiple experiments at once on the same page. To can set these up as follows:
 
- - You can have multiple experiments running on the same page.
-
- - Add the extra experiments to the copy-and-paste snippet from the Dashboard:
+ 1. Add the extra experiments to the your code snippet as follows:
 
         Myna.init({ "experiments": [
-          { "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "class": "experiment1" },
-          { "uuid": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "class": "experiment2" },
-          { "uuid": "cccccccc-cccc-cccc-cccc-cccccccccccc", "class": "experiment3" }
+          { "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "class": "experiment1", "default": "a1" },
+          { "uuid": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "class": "experiment2", "default": "b1" },
+          { "uuid": "cccccccc-cccc-cccc-cccc-cccccccccccc", "class": "experiment3", "default": "c1" }
         ]})
 
- - Make sure you give each experiment a different CSS class name, and make sure each experiment except the last is followed by a comma.
+ 2. Ensure every experiment is followed by a comma *except the last*.
+
+ 3. Make sure the `"uuid"` fields of each experiment are set to the correct values from your dashboard.
+
+ 4. Make sure each experiment has a *different* CSS `"class"`, and that the relevant elements in your page are tagged with the *same* class.
+
+ 5. Make sure the `"default"` fields are set to a variant name from the dashboard for each experiment.
 
 ### Sticky variants
 
@@ -199,20 +230,42 @@ You can deactivate sticky variants for an experiment by adding a `sticky: false`
 
 ### Cookies
 
-TODO - Complete this. Notes:
+*Myna for HTML* uses a cookie to store suggestion data across pages in your site. The cookie stores the following information for each experiment you have running on your site:
 
- - We use cookies as a temporary data store.
+ - the UUID of the experiment;
+ - the last variant name suggested;
+ - a yes/no flag to record whether the suggestion has been rewarded;
+ - a random *response token* that is used to verify rewards and prevent accidental double-rewards.
 
- - The cookies store the following for each experiment on your site:
-    - the experiment UUID
-    - the last suggestion made
-    - a flag to record whether the suggestion has been rewarded yet
-    - an internal response token used to reward the variant on Myna
+The cookie does not store any personal information about your visitors.
 
- - By default, cookies are scoped to the current domain and the path `/`.
-   This is configurable, e.g. for experiments that run across subdomains.
+The default cookie name is `"myna"`. The default scope is the path `/` on the current domain, and the default cookie lifetime is seven days. You can configure these options by adding fields to the code snippet from your dashboard. For example:
 
- - Cookies are used to implement sticky variants. The default lifetime is 7 days.
+    Myna.init({
+      "cookieOptions": {
+        "domain": "yourdomain.com",   // customise the cookie domain
+        "path": "/",                  // customise the cookie path
+        "expires": 7                  // customise the expiry (number of days, specify null to use a session cookie)
+      },
+      "experiments": [
+        { "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "class": "myna", "sticky": false }
+      ]
+    })
+
+If you aren't familiar with coding Javascript, we recommend you consult a front-end developer or [get in touch](https://mynaweb.com/about/contact) to check your syntax.
+
+### Customising the data attribute names
+
+If you are already using the default `data-show`, `data-bind` or `data-goal` attribute names on your site, you may want to customise the names used by *Myna for HTML*. You can do this by adding a *dataPrefix* option to the code snippet from your dashboard:
+
+    Myna.init({
+      "dataPrefix": "foo",
+      "experiments": [
+        { "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "class": "myna", "default": "variant1" }
+      ]
+    })
+
+This example changes the data attribute names to `data-foo-show`, `data-foo-bind` and `data-foo-goal` respectively. This change applies to all HTML elements for all experiments on the page.
 
 # Contributing to the library
 

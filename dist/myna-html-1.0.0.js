@@ -10010,12 +10010,12 @@ Released under the Apache 2.0 License
 var initPlugin,
   __slice = [].slice;
 
-initPlugin = function($) {
+initPlugin = function($, window, document) {
   var eachVariantAndGoal, findDefaultVariant, initGoals, loadSuggestions, saveSuggestions, showVariant,
     _this = this;
   $.mynaDefaults = {
     apiRoot: "//api.mynaweb.com",
-    debug: true,
+    debug: false,
     sticky: true,
     dataPrefix: null,
     cookieName: "myna",
@@ -10325,6 +10325,11 @@ initPlugin = function($) {
     }
   };
   $.initNow = function(options) {
+    if (options == null) {
+      options = {
+        experiments: []
+      };
+    }
     options = $.extend({}, $.mynaDefaults, options);
     $.mynaLog("myna", options, options.experiments);
     return $.each(options.experiments, function(index, exptOptions) {
@@ -10337,6 +10342,11 @@ initPlugin = function($) {
     });
   };
   $.init = function(options) {
+    if (options == null) {
+      options = {
+        experiments: []
+      };
+    }
     return $(document).ready(function() {
       return $.initNow(options);
     });
