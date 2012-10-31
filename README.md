@@ -20,7 +20,7 @@ There are some live demos of running on the [Myna web site](http://mynaweb.com/d
 
 Very soon we will update the dashboard on Myna to allow you to copy-and-paste a snippet of code into your web page to get you started. Here's an example:
 
-    <!-- Start of Myna integration -->
+    <!-- Start of Myna snippet -->
     <script src="http://cdn.mynaweb.com/clients/myna-html-1.latest.min.js"></script>
 
     <script>
@@ -28,7 +28,7 @@ Very soon we will update the dashboard on Myna to allow you to copy-and-paste a 
         { "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "class": "myna", "default": "variant1" }
       ]})
     </script>
-    <!-- End of Myna integration -->
+    <!-- End of Myna snippet -->
 
 You can try this now by copying-and-pasting this code into a web page of your own. You'll need to customise the following:
 
