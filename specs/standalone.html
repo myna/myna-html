@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Myna for HTML</title>
+
+    <link rel="stylesheet" href="lib/jasmine.css">
+
+    <script src="lib/jasmine.js"></script>
+    <script src="lib/jasmine-html.js"></script>
+
+    <!-- include source files here... -->
+    <script src="../dist/myna-html-1.latest.js"></script>
+    <script src="../lib/jquery-1.8.2.js"></script>
+
+    <!-- include spec files here... -->
+    <script src="base.js"></script>
+    <script src="init-spec.js"></script>
+    <script src="suggest-spec.js"></script>
+    <script src="reward-spec.js"></script>
+    <script src="sticky-spec.js"></script>
+    <script src="skip-spec.js"></script>
+    <script src="show-spec.js"></script>
+
+    <script type="text/javascript">
+      (function() {
+        var jasmineEnv = jasmine.getEnv();
+        jasmineEnv.updateInterval = 1000;
+
+        var htmlReporter = new jasmine.HtmlReporter();
+
+        jasmineEnv.addReporter(htmlReporter);
+
+        jasmineEnv.specFilter = function(spec) {
+          return htmlReporter.specFilter(spec);
+        };
+
+        var currentWindowOnload = window.onload;
+
+        window.onload = function() {
+          if (currentWindowOnload) {
+            currentWindowOnload();
+          }
+          execJasmine();
+        };
+
+        function execJasmine() {
+          jasmineEnv.execute();
+        }
+      })();
+    </script>
+  </head>
+
+  <body>
+    <div id="experiments" style="padding: 20px 0; text-align: center; font-family: sans-serif; font-size: .8em">
+      Test data:
+      <span class="expt1" data-show="variant1">Ex1v1</span>
+      <span class="expt1" data-show="variant2">Ex1v2</span>
+      <a class="expt1" data-goal="click" href="#">Ex1goal</a>
+      <span class="expt2" data-show="variant1">Ex2v1</span>
+      <span class="expt2" data-show="variant2">Ex2v2</span>
+      <a class="expt2" data-goal="click" href="#">Ex2goal</a>
+    </div>
+  </body>
+</html>

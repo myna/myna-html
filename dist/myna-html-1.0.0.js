@@ -10007,351 +10007,554 @@ Copyright 2012 Myna Ltd
 Released under the Apache 2.0 License
 */
 
-var initPlugin,
+var Myna,
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __slice = [].slice;
 
-initPlugin = function($, window, document) {
-  var eachVariantAndGoal, findDefaultVariant, initGoals, loadSuggestions, saveSuggestions, showVariant,
-    _this = this;
-  $.mynaDefaults = {
-    apiRoot: "//api.mynaweb.com",
-    debug: false,
-    sticky: true,
-    dataPrefix: null,
-    cookieName: "myna",
-    cookieOptions: {
-      path: "/",
-      expires: 7
-    }
-  };
-  $.mynaLog = function() {
-    var args;
-    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-    if ($.mynaDefaults.debug) {
-      return typeof console !== "undefined" && console !== null ? typeof console.log === "function" ? console.log(args) : void 0 : void 0;
-    }
-  };
-  $.mynaError = function() {
-    var args;
-    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-    $.mynaLog.apply($, args);
-    throw args;
-  };
-  $.fn.mynaData = function(prefix, name) {
-    return this.data(prefix ? "" + prefix + "-" + name : name);
-  };
-  loadSuggestions = function() {
-    var cookieName, savedPath;
-    $.mynaLog("loadSuggestions");
-    try {
-      cookieName = $.mynaDefaults.cookieName;
-      savedPath = $.cookie.defaults.path;
-      $.cookie.defaults.path = $.mynaDefaults.cookieOptions.path;
-      $.mynaLog(" - ", cookieName);
-      return JSON.parse($.cookie(cookieName)) || {};
-    } catch (exn) {
-      return {};
-    } finally {
-      $.cookie.defaults.path = savedPath;
-    }
-  };
-  saveSuggestions = function(suggestions) {
-    var cookieName, cookieOptions, cookieValue, savedPath;
-    $.mynaLog("saveSuggestions", suggestions);
-    try {
-      cookieName = $.mynaDefaults.cookieName;
-      cookieValue = JSON.stringify(suggestions);
-      cookieOptions = $.mynaDefaults.cookieOptions;
-      savedPath = $.cookie.defaults.path;
-      $.cookie.defaults.path = $.mynaDefaults.cookieOptions.path;
-      $.mynaLog(" - ", cookieName, cookieValue, cookieOptions);
-      $.cookie(cookieName, cookieValue);
-      $.mynaLog(" - ", document.cookie);
-    } finally {
-      $.cookie.defaults.path = savedPath;
-    }
-  };
-  $.clearSuggestions = function() {
-    var cookieName, savedPath;
-    $.mynaLog("clearSuggestions");
-    try {
-      savedPath = $.cookie.defaults.path;
-      $.cookie.defaults.path = $.mynaDefaults.cookieOptions.path;
-      cookieName = $.mynaDefaults.cookieName;
-      return $.removeCookie(cookieName);
-    } finally {
-      $.cookie.defaults.path = savedPath;
-    }
-  };
-  $.saveSuggestion = function(uuid, choice, token, rewarded) {
-    var suggestions;
-    if (rewarded == null) {
-      rewarded = false;
-    }
-    $.mynaLog("saveSuggestion", uuid, choice, token, rewarded);
-    suggestions = loadSuggestions();
-    suggestions[uuid] = {
-      choice: choice,
-      token: token,
-      rewarded: rewarded
-    };
-    saveSuggestions(suggestions);
-  };
-  $.deleteSuggestion = function(uuid) {
-    var suggestions;
-    $.mynaLog("deleteSuggestion", uuid);
-    suggestions = loadSuggestions();
-    delete suggestions[uuid];
-    saveSuggestions(suggestions);
-  };
-  $.loadSuggestion = function(uuid) {
-    $.mynaLog("loadSuggestion", uuid);
-    return loadSuggestions()[uuid] || null;
-  };
-  $.suggest = function(options) {
-    var error, success, url, uuid;
-    options = $.extend({}, $.mynaDefaults, options);
-    success = options.success || (function() {});
-    error = options.error || (function() {});
-    uuid = options.uuid || $.mynaError("suggest: no uuid");
-    url = "" + options.apiRoot + "/v1/experiment/" + uuid + "/suggest";
-    $.ajax({
-      url: url,
-      dataType: "jsonp",
-      crossDomain: true,
-      success: function(data, textStatus, jqXHR) {
-        if (data.typename === "suggestion") {
-          $.saveSuggestion(uuid, data.choice, data.token);
-          success({
-            uuid: uuid,
-            choice: data.choice,
-            token: data.token
-          });
-        } else {
-          $.mynaLog("suggest received " + data.typename, data, textStatus, jqXHR);
-          error(data, textStatus, jqXHR);
-        }
+Myna = (function(window, document) {
+  var $;
+  $ = window.jQuery;
+  return Myna = (function() {
+
+    Myna.$ = $;
+
+    Myna.defaults = {
+      debug: false,
+      apiRoot: "//api.mynaweb.com",
+      timeout: 500,
+      cssClass: "myna",
+      dataPrefix: null,
+      sticky: true,
+      skipChance: 0.0,
+      cookieName: "myna",
+      cookieOptions: {
+        path: "/",
+        expires: 7
       },
-      error: function(jqXHR, textStatus, errorThrown) {
-        $.mynaLog("suggest received error", jqXHR, textStatus, errorThrown);
-        error({}, textStatus, jqXHR, errorThrown);
+      experiments: []
+    };
+
+    Myna.init = function(options) {
+      var myna;
+      if (options == null) {
+        options = {
+          experiments: []
+        };
       }
-    });
-  };
-  $.reward = function(options) {
-    var amount, choice, error, stored, success, token, url, uuid;
-    options = $.extend({}, $.mynaDefaults, options);
-    success = options.success || (function() {});
-    error = options.error || (function() {});
-    uuid = options.uuid || $.mynaError("reward: no uuid");
-    stored = $.loadSuggestion(uuid);
-    if (stored && !stored.rewarded) {
-      token = stored.token;
-      choice = stored.choice;
-      $.saveSuggestion(uuid, choice, token, true);
-      amount = options.amount || 1;
-      url = "" + options.apiRoot + "/v1/experiment/" + uuid + "/reward?token=" + token + "&amount=" + amount;
-      $.ajax({
-        url: url,
-        dataType: "jsonp",
-        crossDomain: true,
-        success: function(data, textStatus, jqXHR) {
-          if (data.typename === "ok") {
-            $.mynaLog("reward received ok", data, textStatus, jqXHR);
-            $.saveSuggestion(uuid, choice, token, true);
-            success({
-              uuid: uuid,
-              choice: choice,
-              token: token,
-              amount: amount
-            });
-          } else {
-            $.mynaLog("reward received " + data.typename, data, textStatus, jqXHR);
-          }
-        },
-        error: function(jqXHR, textStatus, errorThrown) {
-          $.mynaLog("reward received error", jqXHR, textStatus, errorThrown);
-          $.deleteSuggestion(uuid);
-          error({}, textStatus, jqXHR, errorThrown);
+      myna = new Myna(options);
+      $(document).ready(function() {
+        return myna.initExperiments();
+      });
+      return myna;
+    };
+
+    function Myna(options) {
+      var exptDefaults,
+        _this = this;
+      if (options == null) {
+        options = {};
+      }
+      this.initExperiments = __bind(this.initExperiments, this);
+
+      this.initExperiment = __bind(this.initExperiment, this);
+
+      this.initGoals = __bind(this.initGoals, this);
+
+      this.showVariant = __bind(this.showVariant, this);
+
+      this.eachVariantAndGoal = __bind(this.eachVariantAndGoal, this);
+
+      this.on = __bind(this.on, this);
+
+      this.wrapHandler = __bind(this.wrapHandler, this);
+
+      this.reward = __bind(this.reward, this);
+
+      this.rewardAjax = __bind(this.rewardAjax, this);
+
+      this.suggest = __bind(this.suggest, this);
+
+      this.suggestSkip = __bind(this.suggestSkip, this);
+
+      this.suggestAjax = __bind(this.suggestAjax, this);
+
+      this.ajax = __bind(this.ajax, this);
+
+      this.loadSuggestion = __bind(this.loadSuggestion, this);
+
+      this.deleteSuggestion = __bind(this.deleteSuggestion, this);
+
+      this.saveSuggestion = __bind(this.saveSuggestion, this);
+
+      this.clearSuggestions = __bind(this.clearSuggestions, this);
+
+      this.saveSuggestions = __bind(this.saveSuggestions, this);
+
+      this.loadSuggestions = __bind(this.loadSuggestions, this);
+
+      this.defaultVariant = __bind(this.defaultVariant, this);
+
+      this.skipSuggestion = __bind(this.skipSuggestion, this);
+
+      this.exptOption = __bind(this.exptOption, this);
+
+      this.exptOptions = __bind(this.exptOptions, this);
+
+      this.error = __bind(this.error, this);
+
+      this.log = __bind(this.log, this);
+
+      this.options = $.extend(true, {}, Myna.defaults, options);
+      this.log("constructor", options);
+      exptDefaults = {
+        cssClass: this.options.cssClass,
+        dataPrefix: this.options.dataPrefix,
+        sticky: this.options.sticky,
+        skipChance: this.options.skipChance,
+        timeout: this.options.timeout
+      };
+      $.each(this.options.experiments, function(index, options) {
+        var cssClass, uuid;
+        uuid = options.uuid;
+        cssClass = options['class'];
+        if (uuid && cssClass) {
+          options = $.extend({}, exptDefaults, options);
+          return _this.options.experiments[uuid] = options;
+        } else {
+          return _this.log("no uuid or CSS class", options, uuid, cssClass, sticky);
         }
       });
-    } else {
-      success();
     }
-  };
-  $.wrapHandler = function(uuid, handler) {
-    $.mynaLog("wrapHandler", uuid, handler);
-    return function() {
-      var args, elem, evt, self, stored;
-      evt = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-      $.mynaLog("wrappedHandler", evt);
-      elem = this;
-      self = $(elem);
-      stored = $.loadSuggestion(uuid);
-      if (stored && !stored.rewarded) {
-        $.mynaLog(" - rewarding and retriggering");
-        evt.stopPropagation();
-        evt.preventDefault();
-        $.reward({
-          uuid: uuid,
-          success: function() {
-            if (elem[evt.type]) {
-              elem[evt.type]();
-            } else {
-              self.trigger(evt.type);
-            }
-          },
-          error: function() {
-            if (elem[evt.type]) {
-              elem[evt.type]();
-            } else {
-              self.trigger(evt.type);
-            }
+
+    Myna.prototype.log = function() {
+      var args;
+      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      if (this.options.debug) {
+        return typeof console !== "undefined" && console !== null ? typeof console.log === "function" ? console.log.apply(console, args) : void 0 : void 0;
+      }
+    };
+
+    Myna.prototype.error = function() {
+      var args;
+      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      this.log.apply(this, args);
+      throw args;
+    };
+
+    Myna.prototype.data = function(jq, prefix, name) {
+      return jq.data(prefix ? "" + prefix + "-" + name : name);
+    };
+
+    Myna.prototype.exptOptions = function(uuid) {
+      return this.options.experiments[uuid] || this.error("no such experiment", uuid);
+    };
+
+    Myna.prototype.exptOption = function(uuid, name, defaultFunc) {
+      if (defaultFunc == null) {
+        defaultFunc = function() {
+          return void 0;
+        };
+      }
+      return this.exptOptions(uuid)[name] || defaultFunc();
+    };
+
+    Myna.prototype.skipSuggestion = function(uuid) {
+      return Math.random() < this.exptOption(uuid, "skipChance");
+    };
+
+    Myna.prototype.defaultVariant = function(uuid) {
+      var ans, cssClass, dataPrefix, options;
+      options = this.exptOptions(uuid);
+      ans = options["default"];
+      if (!ans) {
+        cssClass = options["class"];
+        dataPrefix = options["dataPrefix"];
+        this.eachVariantAndGoal(cssClass, dataPrefix, function(show, bind, goal) {
+          if (show && !ans) {
+            return ans = show;
           }
         });
-      } else {
-        $.mynaLog(" - retriggering", evt, evt.type);
-        return handler.call.apply(handler, [this, evt].concat(__slice.call(args)));
+      }
+      return ans;
+    };
+
+    Myna.prototype.loadSuggestions = function() {
+      var cookieName, savedPath;
+      this.log("loadSuggestions");
+      try {
+        cookieName = this.options.cookieName;
+        savedPath = $.cookie.defaults.path;
+        $.cookie.defaults.path = this.options.cookieOptions.path;
+        this.log(" - ", cookieName);
+        return JSON.parse($.cookie(cookieName)) || {};
+      } catch (exn) {
+        return {};
+      } finally {
+        $.cookie.defaults.path = savedPath;
       }
     };
-  };
-  $.fn.mynaOn = function() {
-    var args, eventData, eventType, handler, uuid;
-    eventType = arguments[0], uuid = arguments[1], args = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
-    $.mynaLog.apply($, ["mynaOn", eventType, uuid].concat(__slice.call(args)));
-    switch (args.length) {
-      case 0:
-        return this.on(eventType, $.wrapHandler(uuid, (function() {})));
-      case 1:
-        handler = args[0];
-        return this.on(eventType, $.wrapHandler(uuid, handler));
-      default:
-        eventData = args[0];
-        handler = args[1];
-        return this.on(eventType, null, eventData, $.wrapHandler(uuid, handler));
-    }
-  };
-  eachVariantAndGoal = function(cssClass, dataPrefix, handler) {
-    return $("." + cssClass).each(function(index, elem) {
-      var bind, goal, self, show;
-      self = $(elem);
-      show = self.mynaData(dataPrefix, "show");
-      bind = self.mynaData(dataPrefix, "bind");
-      goal = self.mynaData(dataPrefix, "goal");
-      return handler.call(self, show, bind, goal);
-    });
-  };
-  showVariant = function(cssClass, dataPrefix, choice) {
-    return eachVariantAndGoal(cssClass, dataPrefix, function(show, bind, goal) {
-      var match;
-      if (show) {
-        switch (show) {
-          case choice:
-            this.show();
-            break;
-          default:
-            this.hide();
-        }
+
+    Myna.prototype.saveSuggestions = function(suggestions) {
+      var cookieName, cookieOptions, cookieValue, savedPath;
+      this.log("saveSuggestions", suggestions);
+      try {
+        cookieName = this.options.cookieName;
+        cookieValue = JSON.stringify(suggestions);
+        cookieOptions = this.options.cookieOptions;
+        savedPath = $.cookie.defaults.path;
+        $.cookie.defaults.path = this.options.cookieOptions.path;
+        this.log(" - ", cookieName, cookieValue, cookieOptions);
+        $.cookie(cookieName, cookieValue);
+        this.log(" - ", document.cookie);
+      } finally {
+        $.cookie.defaults.path = savedPath;
       }
-      if (bind) {
-        switch (bind) {
-          case "text":
-            return this.text(choice);
-          case "html":
-            return this.html(choice);
-          case "class":
-            return this.addClass(choice);
-          default:
-            match = bind.match(/@(.*)/);
-            if (match) {
-              return this.attr(match[1], choice);
-            }
-        }
+    };
+
+    Myna.prototype.clearSuggestions = function() {
+      var cookieName, savedPath;
+      this.log("clearSuggestions");
+      try {
+        savedPath = $.cookie.defaults.path;
+        $.cookie.defaults.path = this.options.cookieOptions.path;
+        cookieName = this.options.cookieName;
+        return $.removeCookie(cookieName);
+      } finally {
+        $.cookie.defaults.path = savedPath;
       }
-    });
-  };
-  findDefaultVariant = function(cssClass, dataPrefix) {
-    eachVariantAndGoal(cssClass, dataPrefix, function(show, bind, goal) {
-      if (show) {
-        return show;
+    };
+
+    Myna.prototype.saveSuggestion = function(uuid, choice, token, skipped, rewarded) {
+      var stored, suggestions;
+      if (skipped == null) {
+        skipped = false;
       }
-    });
-    return null;
-  };
-  initGoals = function(uuid, cssClass, dataPrefix) {
-    return eachVariantAndGoal(cssClass, dataPrefix, function(show, bind, goal) {
-      switch (goal) {
-        case "click":
-          return this.mynaOn("click", uuid);
-        case "load":
-          if (this.is("html,body")) {
-            return $(window).mynaOn("load", uuid);
-          }
+      if (rewarded == null) {
+        rewarded = false;
       }
-    });
-  };
-  $.initExperiment = function(options) {
-    var cssClass, dataPrefix, sticky, stored, uuid;
-    uuid = options["uuid"];
-    cssClass = options["class"];
-    sticky = options["sticky"];
-    dataPrefix = options["dataPrefix"];
-    if (!uuid || !cssClass) {
-      $.mynaLog("initExperiment: no uuid or CSS class", options, uuid, cssClass, sticky);
-      return;
-    }
-    stored = $.loadSuggestion(uuid);
-    $.mynaLog("initExperiment", uuid, cssClass, sticky, stored != null ? stored.choice : void 0, stored != null ? stored.token : void 0, stored != null ? stored.rewarded : void 0);
-    if (sticky && stored) {
-      $.mynaLog(" - recalling suggestion", stored.choice);
-      showVariant(cssClass, dataPrefix, stored.choice);
-      initGoals(uuid, cssClass, dataPrefix);
-    } else {
-      $.mynaLog(" - fetching suggestion");
-      $.suggest({
+      this.log("saveSuggestion", uuid, choice, token, skipped, rewarded);
+      stored = {
         uuid: uuid,
-        success: function(data) {
-          showVariant(cssClass, dataPrefix, data.choice);
-          initGoals(uuid, cssClass, dataPrefix);
-        },
-        error: function() {
-          var variant;
-          variant = options["default"] || findDefaultVariant(cssClass, dataPrefix);
-          if (variant) {
-            showVariant(cssClass, dataPrefix, variant);
+        choice: choice,
+        token: token,
+        skipped: skipped,
+        rewarded: rewarded
+      };
+      suggestions = this.loadSuggestions();
+      suggestions[uuid] = stored;
+      this.saveSuggestions(suggestions);
+      return stored;
+    };
+
+    Myna.prototype.deleteSuggestion = function(uuid) {
+      var suggestions;
+      this.log("deleteSuggestion", uuid);
+      suggestions = this.loadSuggestions();
+      delete suggestions[uuid];
+      this.saveSuggestions(suggestions);
+    };
+
+    Myna.prototype.loadSuggestion = function(uuid) {
+      this.log("loadSuggestion", uuid);
+      return this.loadSuggestions()[uuid] || null;
+    };
+
+    Myna.prototype.ajax = function(url, success, error) {
+      var errorTimer, myna, resolved, timeout, wrappedError, wrappedSuccess, xhr;
+      this.log("ajax", url, success, error);
+      timeout = this.options.timeout;
+      xhr = void 0;
+      resolved = false;
+      myna = this;
+      wrappedSuccess = function() {
+        var args;
+        args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+        myna.log.apply(myna, [" - ajax success"].concat(__slice.call(args)));
+        if (!resolved) {
+          window.clearTimeout(errorTimer);
+          resolved = true;
+          return success.apply(null, args);
+        }
+      };
+      wrappedError = function(jqXHR, textStatus, errorThrown) {
+        myna.log(" - ajax error", jqXHR, textStatus, errorThrown);
+        if (!resolved) {
+          resolved = true;
+          return error(jqXHR, textStatus, errorThrown);
+        }
+      };
+      try {
+        errorTimer = window.setTimeout(function() {
+          return wrappedError(xhr, "timeout", timeout);
+        }, timeout);
+        return xhr = $.ajax({
+          url: url,
+          dataType: "jsonp",
+          crossDomain: true,
+          success: wrappedSuccess,
+          error: wrappedError
+        });
+      } catch (exn) {
+        return wrappedError(xhr, "error", exn);
+      } finally {
+        xhr;
+
+      }
+    };
+
+    Myna.prototype.suggestAjax = function(uuid, success, error) {
+      var url, wrappedError, wrappedSuccess,
+        _this = this;
+      this.log("suggestAjax", uuid, success, error);
+      url = "" + this.options.apiRoot + "/v1/experiment/" + uuid + "/suggest";
+      wrappedSuccess = function(data, textStatus, jqXHR) {
+        var stored;
+        if (data.typename === "suggestion") {
+          stored = _this.saveSuggestion(uuid, data.choice, data.token, false, false);
+          _this.log(" - suggest received and stored", stored);
+          success(stored);
+        } else {
+          _this.log(" - suggest received " + data.typename, data, textStatus, jqXHR);
+          error(jqXHR, textStatus, data);
+        }
+      };
+      wrappedError = function(jqXHR, textStatus, errorThrown) {
+        _this.log(" - suggest received error", jqXHR, textStatus, errorThrown);
+        error(jqXHR, textStatus, errorThrown);
+      };
+      return this.ajax(url, wrappedSuccess, wrappedError);
+    };
+
+    Myna.prototype.suggestSkip = function(uuid, success, error) {
+      var choice, stored;
+      this.log("suggestSkip", uuid, success, error);
+      choice = this.defaultVariant(uuid);
+      if (choice) {
+        stored = this.saveSuggestion(uuid, choice, null, true, false);
+        success(stored);
+      } else {
+        error(null, "no-default-suggestion", uuid);
+      }
+    };
+
+    Myna.prototype.suggest = function(uuid, success, error) {
+      var sticky, stored;
+      if (success == null) {
+        success = (function() {});
+      }
+      if (error == null) {
+        error = (function() {});
+      }
+      this.log("suggest", uuid, success, error);
+      sticky = this.exptOption(uuid, "sticky");
+      stored = sticky && this.loadSuggestion(uuid);
+      if (stored) {
+        return success(stored);
+      } else if (this.skipSuggestion(uuid)) {
+        return this.suggestSkip(uuid, success, error);
+      } else {
+        return this.suggestAjax(uuid, success, error);
+      }
+    };
+
+    Myna.prototype.rewardAjax = function(stored, amount, success, error) {
+      var choice, token, url, uuid, wrappedError, wrappedSuccess,
+        _this = this;
+      this.log("rewardAjax", stored, amount, success, error);
+      uuid = stored.uuid;
+      token = stored.token;
+      choice = stored.choice;
+      url = "" + this.options.apiRoot + "/v1/experiment/" + uuid + "/reward?token=" + token + "&amount=" + amount;
+      wrappedSuccess = function(data, textStatus, jqXHR) {
+        if (data.typename === "ok") {
+          _this.log("reward received ok", data, textStatus, jqXHR);
+          stored = _this.saveSuggestion(uuid, choice, token, false, true);
+          success(stored);
+        } else {
+          _this.log("reward received " + data.typename, data, textStatus, jqXHR);
+        }
+      };
+      wrappedError = function(jqXHR, textStatus, errorThrown) {
+        _this.log("reward received error", jqXHR, textStatus, errorThrown);
+        _this.deleteSuggestion(uuid);
+        error(jqXHR, textStatus, errorThrown);
+      };
+      return this.ajax(url, wrappedSuccess, wrappedError);
+    };
+
+    Myna.prototype.reward = function(uuid, amount, success, error) {
+      var stored;
+      if (amount == null) {
+        amount = 1.0;
+      }
+      if (success == null) {
+        success = (function() {});
+      }
+      if (error == null) {
+        error = (function() {});
+      }
+      this.log("reward", uuid, amount, success, error);
+      stored = this.loadSuggestion(uuid);
+      if (!stored) {
+        this.log("no suggestion");
+        error(void 0, "no-suggestion", uuid);
+      } else if (stored.skipped) {
+        this.log("skipped");
+        error(void 0, "skipped", uuid);
+      } else if (stored.rewarded) {
+        this.log("repeat reward");
+        error(void 0, "repeat-reward", uuid);
+      } else {
+        this.rewardAjax(stored, amount, success, error);
+      }
+    };
+
+    Myna.prototype.wrapHandler = function(uuid, handler) {
+      var myna;
+      myna = this;
+      myna.log("wrapHandler", uuid, handler);
+      return function() {
+        var args, complete, elem, evt, self, stored;
+        evt = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+        myna.log("wrappedHandler", evt);
+        elem = this;
+        self = $(elem);
+        stored = myna.loadSuggestion(uuid);
+        if (stored && !stored.rewarded) {
+          myna.log(" - rewarding and retriggering");
+          evt.stopPropagation();
+          evt.preventDefault();
+          complete = function() {
+            if (elem[evt.type]) {
+              elem[evt.type]();
+            } else {
+              self.trigger(evt.type);
+            }
+          };
+          myna.reward({
+            uuid: uuid,
+            success: complete,
+            error: complete
+          });
+        } else {
+          myna.log(" - retriggering", evt, evt.type);
+          return handler.call.apply(handler, [this, evt].concat(__slice.call(args)));
+        }
+      };
+    };
+
+    Myna.prototype.on = function() {
+      var args, eventData, eventType, handler, jq, uuid;
+      jq = arguments[0], eventType = arguments[1], uuid = arguments[2], args = 4 <= arguments.length ? __slice.call(arguments, 3) : [];
+      this.log.apply(this, ["on", jq, eventType, uuid].concat(__slice.call(args)));
+      switch (args.length) {
+        case 0:
+          return jq.on(eventType, this.wrapHandler(uuid, (function() {})));
+        case 1:
+          handler = args[0];
+          return jq.on(eventType, this.wrapHandler(uuid, handler));
+        default:
+          eventData = args[0];
+          handler = args[1];
+          return jq.on(eventType, null, eventData, this.wrapHandler(uuid, handler));
+      }
+    };
+
+    Myna.prototype.eachVariantAndGoal = function(cssClass, dataPrefix, handler) {
+      var _this = this;
+      this.log("eachVariantAndGoal", cssClass, dataPrefix, handler);
+      return $("." + cssClass).each(function(index, elem) {
+        var bind, goal, self, show;
+        self = $(elem);
+        show = _this.data(self, dataPrefix, "show");
+        bind = _this.data(self, dataPrefix, "bind");
+        goal = _this.data(self, dataPrefix, "goal");
+        return handler.call(self, show, bind, goal);
+      });
+    };
+
+    Myna.prototype.showVariant = function(cssClass, dataPrefix, choice) {
+      this.log("showVariant", cssClass, dataPrefix, choice);
+      return this.eachVariantAndGoal(cssClass, dataPrefix, function(show, bind, goal) {
+        var match;
+        if (show) {
+          switch (show) {
+            case choice:
+              this.show();
+              break;
+            default:
+              this.hide();
+          }
+        }
+        if (bind) {
+          switch (bind) {
+            case "text":
+              return this.text(choice);
+            case "html":
+              return this.html(choice);
+            case "class":
+              return this.addClass(choice);
+            default:
+              match = bind.match(/@(.*)/);
+              if (match) {
+                return this.attr(match[1], choice);
+              }
           }
         }
       });
-    }
-  };
-  $.initNow = function(options) {
-    if (options == null) {
-      options = {
-        experiments: []
-      };
-    }
-    options = $.extend({}, $.mynaDefaults, options);
-    $.mynaLog("myna", options, options.experiments);
-    return $.each(options.experiments, function(index, exptOptions) {
-      $.mynaLog(" - ", exptOptions);
-      exptOptions = $.extend({
-        dataPrefix: options.dataPrefix,
-        sticky: options.sticky
-      }, exptOptions);
-      return $.initExperiment(exptOptions);
-    });
-  };
-  $.init = function(options) {
-    if (options == null) {
-      options = {
-        experiments: []
-      };
-    }
-    return $(document).ready(function() {
-      return $.initNow(options);
-    });
-  };
-  return $.noConflict();
-};
+    };
 
-window.Myna = initPlugin(window.jQuery, window, document);
+    Myna.prototype.initGoals = function(cssClass, dataPrefix) {
+      this.log("initGoals", cssClass, dataPrefix);
+      return this.eachVariantAndGoal(cssClass, dataPrefix, function(show, bind, goal) {
+        switch (goal) {
+          case "click":
+            return this.on(this, "click", uuid);
+          case "load":
+            if (this.is("html,body")) {
+              return this.on($(window), "load", uuid);
+            }
+        }
+      });
+    };
+
+    Myna.prototype.initExperiment = function(options) {
+      var cssClass, dataPrefix, error, stored, success, uuid,
+        _this = this;
+      uuid = options['uuid'];
+      cssClass = options['class'];
+      dataPrefix = options['dataPrefix'];
+      stored = this.loadSuggestion(uuid);
+      this.log("initExperiment", uuid, cssClass, dataPrefix, stored);
+      success = function(stored) {
+        _this.log(" - initExperiment success", stored);
+        _this.showVariant(cssClass, dataPrefix, stored.choice);
+        if (!stored.skipped && !stored.rewarded && stored.token) {
+          _this.initGoals(cssClass, dataPrefix);
+        }
+      };
+      error = function() {
+        var choice;
+        _this.log(" - initExperiment error");
+        choice = _this.defaultVariant(uuid);
+        if (choice) {
+          _this.showVariant(cssClass, dataPrefix, choice);
+        }
+      };
+      this.suggest(uuid, success, error);
+    };
+
+    Myna.prototype.initExperiments = function() {
+      var _this = this;
+      $.each(this.options.experiments, function(index, options) {
+        return _this.initExperiment(options);
+      });
+    };
+
+    return Myna;
+
+  })();
+})(window, document);
+
+
+jQuery.noConflict(true);

@@ -4,395 +4,547 @@ Copyright 2012 Myna Ltd
 Released under the Apache 2.0 License
 ###
 
-# Extends the supplied jQuery object with Myna functionality and returns it.
-# This new super-jQuery object is what gets bound as "window.Myna".
-#
-# Calls "jQuery.noConflict()" to ensure Myna doesn't conflict with existing
-# copies of jQuery on the user's site.
-#
-# Window and document are supplied as extra arguments to make them eligible
-# for code minification.
-#
-# jQuery window document -> jQuery
-initPlugin = ($, window, document) ->
+Myna = do (window, document) ->
 
-  # Defaults, logging, and errors ---------------
+  # Cache a reference to jQuery:
+  $ = window.jQuery
 
-  $.mynaDefaults =
-    apiRoot: "//api.mynaweb.com"
-    debug: false
-    sticky: true
-    dataPrefix: null
-    cookieName: "myna"
-    cookieOptions:
-      path: "/"
-      expires: 7   # days
-
-  $.mynaLog = (args...) =>
-    if $.mynaDefaults.debug
-      console?.log?(args)
-
-  $.mynaError = (args...) =>
-    $.mynaLog(args...)
-    throw args
-
-  # Version of $.data that accepts a prefix as well as a key name.
+  # Extends the supplied jQuery object with Myna functionality and returns it.
+  # This new super-jQuery object is what gets bound as "window.Myna".
   #
-  # string string -> any(string null)
-  $.fn.mynaData = (prefix, name) ->
-    return this.data(if prefix then "#{prefix}-#{name}" else name)
-
-  # Saving and loading suggestions --------------
-
-  # Load the full set of remembered suggestions for this web site from
-  # the Myna cookie. Returns [] by default.
+  # Calls "jQuery.noConflict()" to ensure Myna doesn't conflict with existing
+  # copies of jQuery on the user's site.
   #
-  # -> arrayOf(suggestionJson)
-  loadSuggestions = () =>
-    $.mynaLog("loadSuggestions")
-
-    try
-      cookieName = $.mynaDefaults.cookieName
-
-      savedPath = $.cookie.defaults.path
-      $.cookie.defaults.path = $.mynaDefaults.cookieOptions.path
-
-      $.mynaLog(" - ", cookieName)
-
-      JSON.parse($.cookie(cookieName)) || {}
-    catch exn
-      {}
-    finally
-      $.cookie.defaults.path = savedPath
-
-  # Save an array of remembered suggestions to the Myna cookie.
+  # Window and document are supplied as extra arguments to make them eligible
+  # for code minification.
   #
-  # arrayOf(suggestionJson) -> void
-  saveSuggestions = (suggestions) =>
-    $.mynaLog("saveSuggestions", suggestions)
+  # jQuery window document -> jQuery
+  class Myna
 
-    try
-      cookieName = $.mynaDefaults.cookieName
-      cookieValue = JSON.stringify(suggestions)
-      cookieOptions = $.mynaDefaults.cookieOptions
+    # Provide a way to get hold of Myna's jQuery instance when running unit tests.
+    # We need this to mock calls to $.ajax when testing the complete Myna for HTML.
+    @$ = $
 
-      savedPath = $.cookie.defaults.path
-      $.cookie.defaults.path = $.mynaDefaults.cookieOptions.path
+    @defaults:
+      debug:         false
+      apiRoot:       "//api.mynaweb.com"
+      timeout:       500    # milliseconds
+      cssClass:      "myna"
+      dataPrefix:    null
+      sticky:        true
+      skipChance:    0.0    # [0.0, 1.0]
+      cookieName:    "myna"
+      cookieOptions:
+        path:        "/"
+        expires:     7      # days
+      experiments:   []
 
-      $.mynaLog(" - ", cookieName, cookieValue, cookieOptions)
+    # Factory method. Attach a call to Myna.initNow to the document.ready event.
+    # Because we're using jQuery 1.5+, this guarantees Myna will be initialised
+    # no matter where the call to Myna.init is placed in the web page.
+    #
+    # mynaOptions -> void
+    @init: (options = { experiments: [] }) ->
+      myna = new Myna(options)
+      $(document).ready(-> myna.initExperiments())
+      myna
 
-      $.cookie(cookieName, cookieValue)
+    # Initialise Myna. Set up variants and attach goal handlers for all supplied experiments.
+    #
+    # mynaOptions -> void
+    constructor: (options = {}) ->
+      this.options = $.extend(true, {}, Myna.defaults, options)
 
-      $.mynaLog(" - ", document.cookie)
-    finally
-      $.cookie.defaults.path = savedPath
+      this.log("constructor", options)
 
-    return
+      exptDefaults =
+        cssClass:   this.options.cssClass
+        dataPrefix: this.options.dataPrefix
+        sticky:     this.options.sticky
+        skipChance: this.options.skipChance
+        timeout:    this.options.timeout
 
-  # Delete the Myna cookie that stores remembered suggestions
-  # (useful for debugging).
-  #
-  # -> void
-  $.clearSuggestions = () =>
-    $.mynaLog("clearSuggestions")
+      $.each this.options.experiments, (index, options) =>
+        uuid     = options.uuid
+        cssClass = options['class']
 
-    try
-      savedPath = $.cookie.defaults.path
-      $.cookie.defaults.path = $.mynaDefaults.cookieOptions.path
-
-      cookieName = $.mynaDefaults.cookieName
-
-      $.removeCookie(cookieName)
-    finally
-      $.cookie.defaults.path = savedPath
-
-  # Save a suggestion to the Myna cookie, allowing it to be restored for later
-  # use in sticky tests.
-  #
-  # uuidString string uuidString [boolean] -> void
-  $.saveSuggestion = (uuid, choice, token, rewarded = false) =>
-    $.mynaLog("saveSuggestion", uuid, choice, token, rewarded)
-
-    suggestions = loadSuggestions()
-    suggestions[uuid] = {
-      choice:   choice
-      token:    token
-      rewarded: rewarded
-    }
-    saveSuggestions(suggestions)
-
-    return
-
-  # Delete any remembered suggestion for the supplied experiment UUID
-  # from the Myna cookie. Used in error handling code.
-  #
-  # uuidString -> void
-  $.deleteSuggestion = (uuid) =>
-    $.mynaLog("deleteSuggestion", uuid)
-
-    suggestions = loadSuggestions()
-    delete suggestions[uuid];
-    saveSuggestions(suggestions)
-
-    return
-
-  # Load any remembered suggestion for the supplied experiment UUID
-  # from the Myna cookie.
-  #
-  # uuidString -> any(suggestionJson, null)
-  $.loadSuggestion = (uuid) =>
-    $.mynaLog("loadSuggestion", uuid)
-    loadSuggestions()[uuid] || null
-
-  # Basic suggest and reward functions ----------
-
-  # Obtain a suggestion from Myna via JSONP.
-  #
-  # suggestOptions -> void
-  $.suggest = (options) =>
-    options = $.extend({}, $.mynaDefaults, options)
-
-    success = options.success || (->)
-    error   = options.error   || (->)
-
-    uuid = options.uuid || $.mynaError("suggest: no uuid")
-    url  = "#{options.apiRoot}/v1/experiment/#{uuid}/suggest"
-
-    $.ajax
-      url: url
-      dataType: "jsonp"
-      crossDomain: true
-      success: (data, textStatus, jqXHR) =>
-        if data.typename == "suggestion"
-          $.saveSuggestion(uuid, data.choice, data.token)
-          success(uuid: uuid, choice: data.choice, token: data.token)
+        if uuid && cssClass
+          options = $.extend({}, exptDefaults, options)
+          this.options.experiments[uuid] = options
         else
-          $.mynaLog("suggest received #{data.typename}", data, textStatus, jqXHR)
-          error(data, textStatus, jqXHR)
-        return
-      error: (jqXHR, textStatus, errorThrown) =>
-        $.mynaLog("suggest received error", jqXHR, textStatus, errorThrown)
-        error({}, textStatus, jqXHR, errorThrown)
-        return
+          this.log("no uuid or CSS class", options, uuid, cssClass, sticky)
 
-    return
+    log: (args...) =>
+      if this.options.debug
+        console?.log?(args...)
 
-  # Reward Myna via JSONP.
-  #
-  # rewardOptions -> void
-  $.reward = (options) =>
-    options = $.extend({}, $.mynaDefaults, options)
+    error: (args...) =>
+      this.log(args...)
+      throw args
 
-    success = options.success || (->)
-    error   = options.error   || (->)
+    # Version of $().data that accepts a prefix as well as a key name.
+    #
+    # jQuery string string -> any(string null)
+    data: (jq, prefix, name) ->
+      return jq.data(if prefix then "#{prefix}-#{name}" else name)
 
-    uuid   = options.uuid || $.mynaError("reward: no uuid")
-    stored = $.loadSuggestion(uuid)
+    # Retrieve all options for an experiment.
+    #
+    # uuidString -> exptOptionsObject
+    exptOptions: (uuid) =>
+      this.options.experiments[uuid] || this.error("no such experiment", uuid)
 
-    if stored && !stored.rewarded
-      token  = stored.token
-      choice = stored.choice
-      $.saveSuggestion(uuid, choice, token, true)
+    # Retrieve an option for an experiment.
+    #
+    # uuidString string [(-> any)] -> any
+    exptOption: (uuid, name, defaultFunc = -> undefined) =>
+      this.exptOptions(uuid)[name] || defaultFunc()
 
-      amount = options.amount || 1
-      url    = "#{options.apiRoot}/v1/experiment/#{uuid}/reward?token=#{token}&amount=#{amount}"
+    # Should we skip a suggestion?
+    skipSuggestion: (uuid) =>
+      Math.random() < this.exptOption(uuid, "skipChance")
 
-      $.ajax
-        url: url
-        dataType: "jsonp"
-        crossDomain: true
-        success: (data, textStatus, jqXHR) =>
-          if data.typename == "ok"
-            $.mynaLog("reward received ok", data, textStatus, jqXHR)
-            $.saveSuggestion(uuid, choice, token, true)
-            success(uuid: uuid, choice: choice, token: token, amount: amount)
-          else
-            $.mynaLog("reward received #{data.typename}", data, textStatus, jqXHR)
-          return
-        error: (jqXHR, textStatus, errorThrown) =>
-          $.mynaLog("reward received error", jqXHR, textStatus, errorThrown)
-          $.deleteSuggestion(uuid)
-          error({}, textStatus, jqXHR, errorThrown)
-          return
-    else
-      success()
+    # Returns the default variant for the specified experiment.
+    #
+    # Either obtained from the configuration, or determined from the first
+    # data-show element in the page with the relevant CSS class.
+    #
+    # string any(string, null) -> any(string, null)
+    defaultVariant: (uuid) =>
+      options = this.exptOptions(uuid)
+      ans     = options["default"]
 
-    return
+      if !ans
+        cssClass   = options["class"]
+        dataPrefix = options["dataPrefix"]
+        this.eachVariantAndGoal cssClass, dataPrefix, (show, bind, goal) ->
+          if show && !ans then ans = show
 
-  # Event handlers ------------------------------
+      return ans
 
-  # Wraps an event handler in a new handler that rewards Myna
-  # before delegating control.
-  #
-  # uuidString (event any ... -> void) -> (event any ... -> void)
-  $.wrapHandler = (uuid, handler) ->
-    $.mynaLog("wrapHandler", uuid, handler)
-    (evt, args...) ->
-      $.mynaLog("wrappedHandler", evt)
+    # Saving and loading suggestions --------------
 
-      elem = this
-      self = $(elem)
+    # Load the full set of remembered suggestions for this web site from
+    # the Myna cookie. Returns [] by default.
+    #
+    # -> arrayOf(suggestionObject)
+    loadSuggestions: () =>
+      this.log("loadSuggestions")
 
-      stored = $.loadSuggestion(uuid)
-      if stored && !stored.rewarded
-        $.mynaLog(" - rewarding and retriggering")
-        evt.stopPropagation()
-        evt.preventDefault()
-        $.reward
-          uuid: uuid
-          success: () ->
-            if elem[evt.type]
-              elem[evt.type]()
-            else
-              self.trigger(evt.type)
-            return
-          error: () ->
-            if elem[evt.type]
-              elem[evt.type]()
-            else
-              self.trigger(evt.type)
-            return
-        return
-      else
-        $.mynaLog(" - retriggering", evt, evt.type)
-        return handler.call(this, evt, args...)
+      try
+        cookieName = this.options.cookieName
 
-  # Installs a handler for the supplied DOM event that rewards Myna before
-  # delegating to any existing event handlers.
-  #
-  # string uuidString any ... -> void
-  $.fn.mynaOn = (eventType, uuid, args...) ->
-    $.mynaLog("mynaOn", eventType, uuid, args...)
-    switch args.length
-      when 0
-        this.on(eventType, $.wrapHandler(uuid, (->)))
-      when 1
-        handler = args[0]
-        this.on(eventType, $.wrapHandler(uuid, handler))
-      else
-        eventData = args[0]
-        handler = args[1]
-        this.on(eventType, null, eventData, $.wrapHandler(uuid, handler))
+        savedPath = $.cookie.defaults.path
+        $.cookie.defaults.path = this.options.cookieOptions.path
 
-  # Automatic setup -----------------------------
+        this.log(" - ", cookieName)
 
-  # Helper function that iterates through the elements that have the supplied
-  # experiment CSS class, extracts the relevant "data-" attribute values, and
-  # passes them to an iterator function.
-  #
-  # The element in question is packaged in a jQuery object and bound as "this"
-  # in the iterator function.
-  #
-  # string any(string, null) (string string string -> void) -> void
-  eachVariantAndGoal = (cssClass, dataPrefix, handler) =>
-    $(".#{cssClass}").each (index, elem) =>
-      self = $(elem)
-      show = self.mynaData(dataPrefix, "show")
-      bind = self.mynaData(dataPrefix, "bind")
-      goal = self.mynaData(dataPrefix, "goal")
-      handler.call(self, show, bind, goal)
+        JSON.parse($.cookie(cookieName)) || {}
+      catch exn
+        {}
+      finally
+        $.cookie.defaults.path = savedPath
 
-  # Set up variants for the supplied experiment. This involves scanning for
-  # "data-show" and "data-bind" attributes and setting up the page accordingly.
-  #
-  # string any(string, null) string -> void
-  showVariant = (cssClass, dataPrefix, choice) =>
-    eachVariantAndGoal cssClass, dataPrefix, (show, bind, goal) ->
-      if show
-        switch show
-          when choice then this.show()
-          else this.hide()
+    # Save an array of remembered suggestions to the Myna cookie.
+    #
+    # arrayOf(suggestionObject) -> void
+    saveSuggestions: (suggestions) =>
+      this.log("saveSuggestions", suggestions)
 
-      if bind
-        switch bind
-          when "text"  then this.text(choice)
-          when "html"  then this.html(choice)
-          when "class" then this.addClass(choice)
-          else
-            match = bind.match(/@(.*)/)
-            if match
-              this.attr(match[1], choice)
+      try
+        cookieName = this.options.cookieName
+        cookieValue = JSON.stringify(suggestions)
+        cookieOptions = this.options.cookieOptions
 
-  # Used as a fallback in case the experiment info doesn't contain a
-  # "default" field. Determines the default variant for the supplied experiment
-  # by inspecting the the first "data-show" attribute on the page.
-  #
-  # Returns null if there are no "data-show" attributes on the page
-  # (in which case we don't need to know the default variant anyway).
-  #
-  # string any(string, null) -> any(string, null)
-  findDefaultVariant = (cssClass, dataPrefix) =>
-    eachVariantAndGoal cssClass, dataPrefix, (show, bind, goal) ->
-      if show then return show
-    return null
+        savedPath = $.cookie.defaults.path
+        $.cookie.defaults.path = this.options.cookieOptions.path
 
-  # Attach goal handlers for the supplied experiment.
-  #
-  # uuidString string any(string, null) -> void
-  initGoals = (uuid, cssClass, dataPrefix) =>
-    eachVariantAndGoal cssClass, dataPrefix, (show, bind, goal) ->
-      switch goal
-        when "click"
-          this.mynaOn("click", uuid)
-        when "load"
-          if this.is("html,body") then $(window).mynaOn("load", uuid)
+        this.log(" - ", cookieName, cookieValue, cookieOptions)
 
-  # Set up variants and attach goal handlers for the supplied experiment.
-  #
-  # experimentOptions -> void
-  $.initExperiment = (options) =>
-    uuid       = options["uuid"]
-    cssClass   = options["class"]
-    sticky     = options["sticky"]
-    dataPrefix = options["dataPrefix"]
+        $.cookie(cookieName, cookieValue)
 
-    if !uuid || !cssClass
-      $.mynaLog("initExperiment: no uuid or CSS class", options, uuid, cssClass, sticky)
+        this.log(" - ", document.cookie)
+      finally
+        $.cookie.defaults.path = savedPath
+
       return
 
-    stored = $.loadSuggestion(uuid)
+    # Delete the Myna cookie that stores remembered suggestions
+    # (useful for debugging).
+    #
+    # -> void
+    clearSuggestions: () =>
+      this.log("clearSuggestions")
 
-    $.mynaLog("initExperiment", uuid, cssClass, sticky, stored?.choice, stored?.token, stored?.rewarded)
+      try
+        savedPath = $.cookie.defaults.path
+        $.cookie.defaults.path = this.options.cookieOptions.path
 
-    if sticky && stored
-      $.mynaLog(" - recalling suggestion", stored.choice)
-      showVariant(cssClass, dataPrefix, stored.choice)
-      initGoals(uuid, cssClass, dataPrefix)
-    else
-      $.mynaLog(" - fetching suggestion")
-      $.suggest
-        uuid: uuid
-        success: (data) =>
-          showVariant(cssClass, dataPrefix, data.choice)
-          initGoals(uuid, cssClass, dataPrefix)
+        cookieName = this.options.cookieName
+
+        $.removeCookie(cookieName)
+      finally
+        $.cookie.defaults.path = savedPath
+
+    # Save a suggestion to the Myna cookie, allowing it to be restored for later
+    # use in sticky tests.
+    #
+    # uuidString string uuidString [boolean] -> suggestionObject
+    saveSuggestion: (uuid, choice, token, skipped = false, rewarded = false) =>
+      this.log("saveSuggestion", uuid, choice, token, skipped, rewarded)
+
+      stored =
+        uuid:     uuid
+        choice:   choice
+        token:    token
+        skipped:  skipped
+        rewarded: rewarded
+
+      suggestions = this.loadSuggestions()
+      suggestions[uuid] = stored
+      this.saveSuggestions(suggestions)
+
+      stored
+
+    # Delete any remembered suggestion for the supplied experiment UUID
+    # from the Myna cookie. Used in error handling code.
+    #
+    # uuidString -> void
+    deleteSuggestion: (uuid) =>
+      this.log("deleteSuggestion", uuid)
+
+      suggestions = this.loadSuggestions()
+      delete suggestions[uuid];
+      this.saveSuggestions(suggestions)
+
+      return
+
+    # Load any remembered suggestion for the supplied experiment UUID
+    # from the Myna cookie.
+    #
+    # uuidString -> any(suggestionObject, null)
+    loadSuggestion: (uuid) =>
+      this.log("loadSuggestion", uuid)
+      this.loadSuggestions()[uuid] || null
+
+    # Basic suggest and reward functions ----------
+
+    # Wrapper around $.ajax that performs cross-domain JSONP calls
+    # and catches exceptions and timeouts:
+    ajax: (url, success, error) =>
+      this.log("ajax", url, success, error)
+
+      timeout  = this.options.timeout
+      xhr      = undefined
+      resolved = false
+      myna     = this
+
+      wrappedSuccess = (args...) ->
+        myna.log(" - ajax success", args...)
+        if !resolved
+          window.clearTimeout(errorTimer)
+          resolved = true
+          success(args...)
+
+      wrappedError = (jqXHR, textStatus, errorThrown) ->
+        myna.log(" - ajax error", jqXHR, textStatus, errorThrown)
+        if !resolved
+          resolved = true
+          error(jqXHR, textStatus, errorThrown)
+
+      try
+        # The error argument to $.ajax is ignored for JSONP requests,
+        # so we have to manage timeouts ourselves:
+        errorTimer = window.setTimeout(
+          () -> wrappedError(xhr, "timeout", timeout)
+          timeout
+        )
+
+        xhr = $.ajax
+          url:         url
+          dataType:    "jsonp"
+          crossDomain: true
+          success:     wrappedSuccess
+          error:       wrappedError
+      catch exn
+        wrappedError(xhr, "error", exn)
+      finally
+        xhr
+
+    # Obtain a suggestion from Myna via JSONP.
+    #
+    # uuidString successHandler errorHandler -> void
+    #
+    # where successHandler:
+    #   suggestionObject -> void
+    #
+    # where errorHandler:
+    #   any(jqXHR, null) string any -> void
+    suggestAjax: (uuid, success, error) =>
+      this.log("suggestAjax", uuid, success, error)
+
+      url = "#{this.options.apiRoot}/v1/experiment/#{uuid}/suggest"
+
+      wrappedSuccess = (data, textStatus, jqXHR) =>
+        if data.typename == "suggestion"
+          stored = this.saveSuggestion(uuid, data.choice, data.token, false, false)
+          this.log(" - suggest received and stored", stored)
+          success(stored)
+        else
+          this.log(" - suggest received #{data.typename}", data, textStatus, jqXHR)
+          error(jqXHR, textStatus, data)
+        return
+
+      wrappedError = (jqXHR, textStatus, errorThrown) =>
+        this.log(" - suggest received error", jqXHR, textStatus, errorThrown)
+        error(jqXHR, textStatus, errorThrown)
+        return
+
+      this.ajax(url, wrappedSuccess, wrappedError)
+
+    # Skip a suggestion by suggesting the default variant for the experiment.
+    #
+    # uuidString successHandler errorHandler -> void
+    #
+    # where successHandler:
+    #   suggestionObject -> void
+    #
+    # where errorHandler:
+    #   any(jqXHR, null) string any -> void
+    suggestSkip: (uuid, success, error) =>
+      this.log("suggestSkip", uuid, success, error)
+
+      choice = this.defaultVariant(uuid)
+
+      if choice
+        stored = this.saveSuggestion(uuid, choice, null, true, false)
+        success(stored)
+      else
+        error(null, "no-default-suggestion", uuid)
+
+      return
+
+    # Obtain a suggestion from Myna via stored cookie, default variant, or JSONP.
+    #
+    # uuidString succesHandler errorHandler -> void
+    #
+    # where successHandler:
+    #   suggestionObject -> void
+    #
+    # where errorHandler:
+    #   any(jqXHR, null) string any -> void
+    suggest: (uuid, success = (->), error = (->)) =>
+      this.log("suggest", uuid, success, error)
+
+      sticky = this.exptOption(uuid, "sticky")
+      stored = sticky && this.loadSuggestion(uuid)
+
+      if stored
+        success(stored)
+      else if this.skipSuggestion(uuid)
+        this.suggestSkip(uuid, success, error)
+      else
+        this.suggestAjax(uuid, success, error)
+
+    # Reward Myna via JSONP.
+    #
+    # suggestionObject [0.0, 1.0] successHandler errorHandler -> void
+    #
+    # where successHandler:
+    #   suggestionObject -> void
+    #
+    # where errorHandler:
+    #   any(jqXHR, null) string any -> void
+    rewardAjax: (stored, amount, success, error) =>
+      this.log("rewardAjax", stored, amount, success, error)
+
+      uuid   = stored.uuid
+      token  = stored.token
+      choice = stored.choice
+      url    = "#{this.options.apiRoot}/v1/experiment/#{uuid}/reward?token=#{token}&amount=#{amount}"
+
+      wrappedSuccess = (data, textStatus, jqXHR) =>
+        if data.typename == "ok"
+          this.log("reward received ok", data, textStatus, jqXHR)
+          stored = this.saveSuggestion(uuid, choice, token, false, true)
+          success(stored)
+        else
+          this.log("reward received #{data.typename}", data, textStatus, jqXHR)
+        return
+
+      wrappedError = (jqXHR, textStatus, errorThrown) =>
+        this.log("reward received error", jqXHR, textStatus, errorThrown)
+        this.deleteSuggestion(uuid)
+        error(jqXHR, textStatus, errorThrown)
+        return
+
+      this.ajax(url, wrappedSuccess, wrappedError)
+
+    # Reward Myna via JSONP.
+    #
+    # uuidString [0.0, 1.0] successHandler errorHandler -> void
+    #
+    # where successHandler:
+    #   suggestionObject -> void
+    #
+    # where errorHandler:
+    #   any(jqXHR, null) string any -> void
+    reward: (uuid, amount = 1.0, success = (->), error = (->)) =>
+      this.log("reward", uuid, amount, success, error)
+
+      stored  = this.loadSuggestion(uuid)
+
+      if !stored
+        this.log("no suggestion")
+        error(undefined, "no-suggestion", uuid)
+      else if stored.skipped
+        this.log("skipped")
+        error(undefined, "skipped", uuid)
+      else if stored.rewarded
+        this.log("repeat reward")
+        error(undefined, "repeat-reward", uuid)
+      else
+        this.rewardAjax(stored, amount, success, error)
+
+      return
+
+    # Event handlers ------------------------------
+
+    # Wraps an event handler in a new handler that rewards Myna
+    # before delegating control.
+    #
+    # uuidString (event any ... -> void) -> (event any ... -> void)
+    wrapHandler: (uuid, handler) =>
+      myna = this
+      myna.log("wrapHandler", uuid, handler)
+      (evt, args...) ->
+        myna.log("wrappedHandler", evt)
+
+        elem = this
+        self = $(elem)
+
+        stored = myna.loadSuggestion(uuid)
+        if stored && !stored.rewarded
+          myna.log(" - rewarding and retriggering")
+          evt.stopPropagation()
+          evt.preventDefault()
+
+          complete = () ->
+            if elem[evt.type]
+              elem[evt.type]()
+            else
+              self.trigger(evt.type)
+            return
+
+          myna.reward
+            uuid: uuid
+            success: complete
+            error: complete
           return
-        error: () =>
-          variant = options["default"] || findDefaultVariant(cssClass, dataPrefix)
-          if variant then showVariant(cssClass, dataPrefix, variant)
-          return
+        else
+          myna.log(" - retriggering", evt, evt.type)
+          return handler.call(this, evt, args...)
 
-    return
+    # Installs a handler for the supplied DOM event that rewards Myna before
+    # delegating to any existing event handlers.
+    #
+    # jQuery string uuidString any ... -> void
+    on: (jq, eventType, uuid, args...) =>
+      this.log("on", jq, eventType, uuid, args...)
+      switch args.length
+        when 0
+          jq.on(eventType, this.wrapHandler(uuid, (->)))
+        when 1
+          handler = args[0]
+          jq.on(eventType, this.wrapHandler(uuid, handler))
+        else
+          eventData = args[0]
+          handler = args[1]
+          jq.on(eventType, null, eventData, this.wrapHandler(uuid, handler))
 
-  # Initialise Myna. Set up variants and attach goal handlers for all
-  # supplied experiments.
-  #
-  # mynaOptions -> void
-  $.initNow = (options = { experiments: [] }) =>
-    options = $.extend({}, $.mynaDefaults, options)
-    $.mynaLog("myna", options, options.experiments)
-    $.each options.experiments, (index, exptOptions) =>
-      $.mynaLog(" - ", exptOptions)
-      exptOptions = $.extend({ dataPrefix: options.dataPrefix, sticky: options.sticky }, exptOptions)
-      $.initExperiment(exptOptions)
+    # Automatic setup -----------------------------
 
-  # Attach a call to Myna.initNow to the document.ready event.
-  # Because we're using jQuery 1.5+, this guarantees Myna will be initialised
-  # no matter where the call to Myna.init is placed in the web page.
-  #
-  # mynaOptions -> void
-  $.init = (options = { experiments: [] }) =>
-    $(document).ready(() => $.initNow(options))
+    # Helper function that iterates through the elements that have the supplied
+    # experiment CSS class, extracts the relevant "data-" attribute values, and
+    # passes them to an iterator function.
+    #
+    # The element in question is packaged in a jQuery object and bound as "this"
+    # in the iterator function.
+    #
+    # string any(string, null) (string string string -> void) -> void
+    eachVariantAndGoal: (cssClass, dataPrefix, handler) =>
+      this.log("eachVariantAndGoal", cssClass, dataPrefix, handler)
+      $(".#{cssClass}").each (index, elem) =>
+        self = $(elem)
+        show = this.data(self, dataPrefix, "show")
+        bind = this.data(self, dataPrefix, "bind")
+        goal = this.data(self, dataPrefix, "goal")
+        handler.call(self, show, bind, goal)
 
-  return $.noConflict()
+    # Set up variants for the supplied experiment. This involves scanning for
+    # "data-show" and "data-bind" attributes and setting up the page accordingly.
+    #
+    # string any(string, null) string -> void
+    showVariant: (cssClass, dataPrefix, choice) =>
+      this.log("showVariant", cssClass, dataPrefix, choice)
+      this.eachVariantAndGoal cssClass, dataPrefix, (show, bind, goal) ->
+        if show
+          switch show
+            when choice then this.show()
+            else this.hide()
 
-window.Myna = initPlugin(window.jQuery, window, document)
+        if bind
+          switch bind
+            when "text"  then this.text(choice)
+            when "html"  then this.html(choice)
+            when "class" then this.addClass(choice)
+            else
+              match = bind.match(/@(.*)/)
+              if match
+                this.attr(match[1], choice)
+
+    # Attach goal handlers for the supplied experiment.
+    #
+    # string any(string, null) -> void
+    initGoals: (cssClass, dataPrefix) =>
+      this.log("initGoals", cssClass, dataPrefix)
+      this.eachVariantAndGoal cssClass, dataPrefix, (show, bind, goal) ->
+        switch goal
+          when "click"
+            this.on(this, "click", uuid)
+          when "load"
+            if this.is("html,body")
+              this.on($(window), "load", uuid)
+
+    # Set up variants and attach goal handlers for the supplied experiment.
+    #
+    # experimentOptions -> void
+    initExperiment: (options) =>
+      uuid       = options['uuid']
+      cssClass   = options['class']
+      dataPrefix = options['dataPrefix']
+      stored     = this.loadSuggestion(uuid)
+
+      this.log("initExperiment", uuid, cssClass, dataPrefix, stored)
+
+      success = (stored) =>
+        this.log(" - initExperiment success", stored)
+        this.showVariant(cssClass, dataPrefix, stored.choice)
+        if !stored.skipped && !stored.rewarded && stored.token
+          this.initGoals(cssClass, dataPrefix)
+        return
+
+      error = () =>
+        this.log(" - initExperiment error")
+        choice = this.defaultVariant(uuid)
+        if choice then this.showVariant(cssClass, dataPrefix, choice)
+        return
+
+      this.suggest(uuid, success, error)
+      return
+
+    # Set up variants and attach goal handlers for all experiments.
+    initExperiments: () =>
+      $.each this.options.experiments, (index, options) =>
+        this.initExperiment(options)
+      return
