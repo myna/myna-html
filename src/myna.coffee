@@ -390,9 +390,9 @@ Myna = do (window, document) ->
     # where errorHandler:
     #   any(jqXHR, null) string any -> void
     reward: (uuid, amount = 1.0, success = (->), error = (->)) =>
-      this.log("reward", uuid, amount, success, error)
-
       stored  = this.loadSuggestion(uuid)
+
+      this.log("reward", uuid, amount, success, error, stored)
 
       if !stored
         this.log("no suggestion")
@@ -436,10 +436,7 @@ Myna = do (window, document) ->
               self.trigger(evt.type)
             return
 
-          myna.reward
-            uuid: uuid
-            success: complete
-            error: complete
+          myna.reward(uuid, 1.0, complete, complete)
           return
         else
           myna.log(" - retriggering", evt, evt.type)
@@ -505,16 +502,17 @@ Myna = do (window, document) ->
 
     # Attach goal handlers for the supplied experiment.
     #
-    # string any(string, null) -> void
-    initGoals: (cssClass, dataPrefix) =>
+    # uuidString string any(string, null) -> void
+    initGoals: (uuid, cssClass, dataPrefix) =>
+      myna = this
       this.log("initGoals", cssClass, dataPrefix)
       this.eachVariantAndGoal cssClass, dataPrefix, (show, bind, goal) ->
         switch goal
           when "click"
-            this.on(this, "click", uuid)
+            myna.on(this, "click", uuid)
           when "load"
             if this.is("html,body")
-              this.on($(window), "load", uuid)
+              myna.on($(window), "load", uuid)
 
     # Set up variants and attach goal handlers for the supplied experiment.
     #
@@ -531,7 +529,7 @@ Myna = do (window, document) ->
         this.log(" - initExperiment success", stored)
         this.showVariant(cssClass, dataPrefix, stored.choice)
         if !stored.skipped && !stored.rewarded && stored.token
-          this.initGoals(cssClass, dataPrefix)
+          this.initGoals(uuid, cssClass, dataPrefix)
         return
 
       error = () =>

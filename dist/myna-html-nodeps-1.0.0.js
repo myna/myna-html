@@ -390,8 +390,8 @@ Myna = (function(window, document) {
       if (error == null) {
         error = (function() {});
       }
-      this.log("reward", uuid, amount, success, error);
       stored = this.loadSuggestion(uuid);
+      this.log("reward", uuid, amount, success, error, stored);
       if (!stored) {
         this.log("no suggestion");
         error(void 0, "no-suggestion", uuid);
@@ -428,11 +428,7 @@ Myna = (function(window, document) {
               self.trigger(evt.type);
             }
           };
-          myna.reward({
-            uuid: uuid,
-            success: complete,
-            error: complete
-          });
+          myna.reward(uuid, 1.0, complete, complete);
         } else {
           myna.log(" - retriggering", evt, evt.type);
           return handler.call.apply(handler, [this, evt].concat(__slice.call(args)));
@@ -501,15 +497,17 @@ Myna = (function(window, document) {
       });
     };
 
-    Myna.prototype.initGoals = function(cssClass, dataPrefix) {
+    Myna.prototype.initGoals = function(uuid, cssClass, dataPrefix) {
+      var myna;
+      myna = this;
       this.log("initGoals", cssClass, dataPrefix);
       return this.eachVariantAndGoal(cssClass, dataPrefix, function(show, bind, goal) {
         switch (goal) {
           case "click":
-            return this.on(this, "click", uuid);
+            return myna.on(this, "click", uuid);
           case "load":
             if (this.is("html,body")) {
-              return this.on($(window), "load", uuid);
+              return myna.on($(window), "load", uuid);
             }
         }
       });
@@ -527,7 +525,7 @@ Myna = (function(window, document) {
         _this.log(" - initExperiment success", stored);
         _this.showVariant(cssClass, dataPrefix, stored.choice);
         if (!stored.skipped && !stored.rewarded && stored.token) {
-          _this.initGoals(cssClass, dataPrefix);
+          _this.initGoals(uuid, cssClass, dataPrefix);
         }
       };
       error = function() {
