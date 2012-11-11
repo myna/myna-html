@@ -428,7 +428,6 @@ Myna = do (window, document) ->
             if elem[evt.type]
               # If there's a method for this event, call it directly to retrigger the default action:
               myna.log(" - dom method", elem, evt.type)
-              window.elem = elem
               window.setTimeout(
                 () -> elem[evt.type]()
                 0
