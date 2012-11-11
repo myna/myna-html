@@ -430,7 +430,6 @@ Myna = (function(window, document) {
             myna.log(" - about to retrigger", evt, evt.type);
             if (elem[evt.type]) {
               myna.log(" - dom method", elem, evt.type);
-              window.elem = elem;
               window.setTimeout(function() {
                 return elem[evt.type]();
               }, 0);
@@ -518,7 +517,7 @@ Myna = (function(window, document) {
             return myna.on(this, "click", uuid);
           case "load":
             if (this.is("html,body")) {
-              return myna.on($(window), "load", uuid);
+              return myna.reward(uuid, 1.0);
             }
         }
       });

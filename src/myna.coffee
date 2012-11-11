@@ -514,7 +514,7 @@ Myna = do (window, document) ->
             myna.on(this, "click", uuid)
           when "load"
             if this.is("html,body")
-              myna.on($(window), "load", uuid)
+              myna.reward(uuid, 1.0)
 
     # Set up variants and attach goal handlers for the supplied experiment.
     #
