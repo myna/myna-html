@@ -1,9 +1,3 @@
-###!
-Myna jQuery Client Library
-Copyright 2012 Myna Ltd
-Released under the Apache 2.0 License
-###
-
 Myna = do (window, document) ->
 
   # Cache a reference to jQuery:

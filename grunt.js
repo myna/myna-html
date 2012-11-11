@@ -3,6 +3,32 @@
 module.exports = function(grunt) {
   grunt.initConfig({
     pkg: '<json:package.json>',
+    meta: {
+      standaloneBanner: [
+        '/*!',
+        ' * <%= pkg.description %> v<%= pkg.version %> (standalone)',
+        ' * Copyright 2012 Myna Ltd',
+        ' * License: BSD 3-clause (http://opensource.org/licenses/BSD-3-Clause)',
+        ' * Published: <%= grunt.template.today("yyyy-mm-dd") %>',
+        ' * Includes:',
+        ' *  - jQuery 1.8.2 http://jquery.com/download',
+        ' *  - JSON.{parse,stringify} https://raw.github.com/douglascrockford/JSON-js/master/json2.js',
+        ' *  - jQuery Cookie https://github.com/carhartl/jquery-cookie',
+        ' */'
+      ].join("\n"),
+      nodepsBanner: [
+        '/*!',
+        ' * <%= pkg.description %> v<%= pkg.version %> (no dependencies)',
+        ' * Copyright 2012 Myna Ltd',
+        ' * License: BSD 3-clause (http://opensource.org/licenses/BSD-3-Clause)',
+        ' * Published: <%= grunt.template.today("yyyy-mm-dd") %>',
+        ' * Dependencies:',
+        ' *  - jQuery 1.5+ http://jquery.com/download',
+        ' *  - JSON.{parse,stringify} https://raw.github.com/douglascrockford/JSON-js/master/json2.js',
+        ' *  - jQuery Cookie https://github.com/carhartl/jquery-cookie',
+        ' */'
+      ].join("\n")
+    },
     coffee: {
       app: {
         src: [ 'src/*.coffee' ],
@@ -16,6 +42,7 @@ module.exports = function(grunt) {
     concat: {
       dist: {
         src: [
+          '<banner:meta.standaloneBanner>',
           'lib/jquery-1.8.2.js',
           'lib/json2.js',
           'lib/jquery.cookie.js',
@@ -26,6 +53,7 @@ module.exports = function(grunt) {
       },
       latest: {
         src: [
+          '<banner:meta.standaloneBanner>',
           'lib/jquery-1.8.2.js',
           'lib/json2.js',
           'lib/jquery.cookie.js',
@@ -36,12 +64,14 @@ module.exports = function(grunt) {
       },
       nodeps: {
         src: [
+          '<banner:meta.nodepsBanner>',
           'temp/myna.js'
         ],
         dest: 'dist/<%= pkg.name %>-nodeps-<%= pkg.version %>.js'
       },
       nodepsLatest: {
         src: [
+          '<banner:meta.nodepsBanner>',
           'temp/myna.js'
         ],
         dest: 'dist/<%= pkg.name %>-nodeps-<%= pkg.series %>.latest.js'
@@ -49,19 +79,31 @@ module.exports = function(grunt) {
     },
     min: {
       dist: {
-        src: [ 'dist/<%= pkg.name %>-<%= pkg.version %>.js' ],
+        src: [
+          '<banner:meta.standaloneBanner>',
+          'dist/<%= pkg.name %>-<%= pkg.version %>.js'
+        ],
         dest: 'dist/<%= pkg.name %>-<%= pkg.version %>.min.js'
       },
       latest: {
-        src: [ 'dist/<%= pkg.name %>-<%= pkg.series %>.latest.js' ],
+        src: [
+          '<banner:meta.standaloneBanner>',
+          'dist/<%= pkg.name %>-<%= pkg.series %>.latest.js'
+        ],
         dest: 'dist/<%= pkg.name %>-<%= pkg.series %>.latest.min.js'
       },
       nodeps: {
-        src: [ 'dist/<%= pkg.name %>-nodeps-<%= pkg.series %>.js' ],
+        src: [
+          '<banner:meta.nodepsBanner>',
+          'dist/<%= pkg.name %>-nodeps-<%= pkg.series %>.js'
+        ],
         dest: 'dist/<%= pkg.name %>-nodeps-<%= pkg.series %>.min.js'
       },
       nodepsLatest: {
-        src: [ 'dist/<%= pkg.name %>-nodeps-<%= pkg.series %>.latest.js' ],
+        src: [
+          '<banner:meta.nodepsBanner>',
+          'dist/<%= pkg.name %>-nodeps-<%= pkg.series %>.latest.js'
+        ],
         dest: 'dist/<%= pkg.name %>-nodeps-<%= pkg.series %>.latest.min.js'
       }
     }
