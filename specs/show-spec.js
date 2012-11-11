@@ -1,5 +1,5 @@
-describe("myna.initExperiments", function() {
-  it("should data-show elements", function() {
+describe("data-show", function() {
+  it("should show/hide elements", function() {
     this.myna = new Myna({ experiments: [
       { uuid: 'uuid1', class: 'expt1', sticky: false }
     ]});
@@ -23,7 +23,7 @@ describe("myna.initExperiments", function() {
     expect($("#v2").is(":visible")).toEqual(true);
   });
 
-  it("should data-show multiple experiments", function() {
+  it("should work with multiple experiments", function() {
     this.myna = new Myna({ experiments: [
       { uuid: 'uuid1', class: 'expt1', sticky: false },
       { uuid: 'uuid2', class: 'expt2', sticky: false }
@@ -55,8 +55,10 @@ describe("myna.initExperiments", function() {
     expect($("#v3").is(":visible")).toEqual(false);
     expect($("#v4").is(":visible")).toEqual(true);
   });
+});
 
-  it("should data-bind text", function() {
+describe("data-bind", function() {
+  it("should alter an element's text", function() {
     this.myna = new Myna({ experiments: [
       { uuid: 'uuid1', class: 'expt1', sticky: false }
     ]});
@@ -76,7 +78,7 @@ describe("myna.initExperiments", function() {
     expect($("#v1").html()).toEqual("&lt;v2&gt;");
   });
 
-  it("should data-bind html", function() {
+  it("should alter an element's html", function() {
     this.myna = new Myna({ experiments: [
       { uuid: 'uuid1', class: 'expt1', sticky: false }
     ]});
@@ -96,7 +98,7 @@ describe("myna.initExperiments", function() {
     expect($("#v1").html()).toEqual("<v2></v2>");
   });
 
-  it("should data-bind class", function() {
+  it("should add to an element's class", function() {
     this.myna = new Myna({ experiments: [
       { uuid: 'uuid1', class: 'expt1', sticky: false }
     ]});
@@ -116,7 +118,7 @@ describe("myna.initExperiments", function() {
     expect($("#v1").attr("class")).toEqual("expt1 variant1 variant2");
   });
 
-  it("should data-bind @title", function() {
+  it("should alter an element's title attribute", function() {
     this.myna = new Myna({ experiments: [
       { uuid: 'uuid1', class: 'expt1', sticky: false }
     ]});
@@ -136,7 +138,7 @@ describe("myna.initExperiments", function() {
     expect($("#v1").attr("title")).toEqual("variant2");
   });
 
-  it("should data-bind multiple experiments", function() {
+  it("should work with multiple experiments", function() {
     this.myna = new Myna({ experiments: [
       { uuid: 'uuid1', class: 'expt1', sticky: false },
       { uuid: 'uuid2', class: 'expt2', sticky: false }
@@ -146,18 +148,24 @@ describe("myna.initExperiments", function() {
 
     $("#experiments").html(
       ' <span id="v1" class="expt1" data-bind="@title"></span> ' +
-      ' <span id="v2" class="expt2" data-bind="@title"></span> '
+      ' <span id="v2" class="expt2" data-bind="@style"></span> '
     );
 
     expect($("#v1").attr("title")).toEqual(null);
+    expect($("#v1").attr("style")).toEqual(null);
     expect($("#v2").attr("title")).toEqual(null);
+    expect($("#v2").attr("style")).toEqual(null);
 
     this.myna.initExperiments();
     expect($("#v1").attr("title")).toEqual("a");
-    expect($("#v2").attr("title")).toEqual("b");
+    expect($("#v1").attr("style")).toEqual(null);
+    expect($("#v2").attr("title")).toEqual(null);
+    expect($("#v2").attr("style")).toEqual("b");
 
     this.myna.initExperiments();
     expect($("#v1").attr("title")).toEqual("c");
-    expect($("#v2").attr("title")).toEqual("a");
+    expect($("#v1").attr("style")).toEqual(null);
+    expect($("#v2").attr("title")).toEqual(null);
+    expect($("#v2").attr("style")).toEqual("a");
   });
 });

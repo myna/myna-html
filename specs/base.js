@@ -49,8 +49,6 @@ function resetDom() {
 }
 
 beforeEach(function() {
-  console.log("----------");
-
   this.addMatchers({
     toBeOfType: function(expected) {
       return typeof(this.actual) == expected;

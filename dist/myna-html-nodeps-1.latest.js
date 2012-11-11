@@ -422,9 +422,15 @@ Myna = (function(window, document) {
           evt.stopPropagation();
           evt.preventDefault();
           complete = function() {
+            myna.log(" - about to retrigger", evt, evt.type);
             if (elem[evt.type]) {
-              elem[evt.type]();
+              myna.log(" - dom method", elem, evt.type);
+              window.elem = elem;
+              window.setTimeout(function() {
+                return elem[evt.type]();
+              }, 0);
             } else {
+              myna.log(" - jQuery trigger", self, evt.type);
               self.trigger(evt.type);
             }
           };

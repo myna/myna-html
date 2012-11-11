@@ -1,18 +1,18 @@
 describe("$.cookie", function() {
   it("should be present", function() {
-    expect($.cookie).toBeOfType("function")
-    expect($.removeCookie).toBeOfType("function")
+    expect(Myna.$.cookie).toBeOfType("function")
+    expect(Myna.$.removeCookie).toBeOfType("function")
   });
 
   it("should save data", function() {
-    $.removeCookie("a");
-    expect($.cookie("a")).toBeFalsy();
+    Myna.$.removeCookie("a");
+    expect(Myna.$.cookie("a")).toBeFalsy();
 
-    $.cookie("a", "b");
-    expect($.cookie("a")).toEqual("b");
+    Myna.$.cookie("a", "b");
+    expect(Myna.$.cookie("a")).toEqual("b");
 
-    $.removeCookie("a");
-    expect($.cookie("a")).toBeFalsy();
+    Myna.$.removeCookie("a");
+    expect(Myna.$.cookie("a")).toBeFalsy();
   });
 });
 

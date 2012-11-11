@@ -430,9 +430,18 @@ Myna = do (window, document) ->
           evt.preventDefault()
 
           complete = () ->
+            myna.log(" - about to retrigger", evt, evt.type)
             if elem[evt.type]
-              elem[evt.type]()
+              # If there's a method for this event, call it directly to retrigger the default action:
+              myna.log(" - dom method", elem, evt.type)
+              window.elem = elem
+              window.setTimeout(
+                () -> elem[evt.type]()
+                0
+              )
             else
+              # If there isn't a method for this event, trigger the event using jQuery:
+              myna.log(" - jQuery trigger", self, evt.type)
               self.trigger(evt.type)
             return
 
