@@ -22,7 +22,7 @@ Myna = do (window, document) ->
     @defaults:
       debug:         false
       apiRoot:       "//api.mynaweb.com"
-      timeout:       500    # milliseconds
+      timeout:       1200    # milliseconds
       cssClass:      "myna"
       dataPrefix:    null
       sticky:        true
