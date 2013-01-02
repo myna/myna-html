@@ -1,4 +1,5 @@
 describe("data-show", function() {
+
   it("should show/hide elements", function() {
     this.myna = new Myna({ experiments: [
       { uuid: 'uuid1', class: 'expt1', sticky: false }

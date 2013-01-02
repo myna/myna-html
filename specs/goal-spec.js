@@ -1,4 +1,5 @@
 describe("data-goal", function() {
+
   it("should detect click events", function() {
     var myna = new Myna({ experiments: [
       { uuid: 'uuid1', class: 'expt1', sticky: false }

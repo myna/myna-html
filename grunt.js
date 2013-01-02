@@ -37,7 +37,10 @@ module.exports = function(grunt) {
       }
     },
     jasmine: {
-      files: ['specs/**/*.html']
+      //src: 'dist/<%= pkg.name %>-<%= pkg.version %>.js', // This doesn't work
+      src: 'dist/myna-html-1.latest.js',
+      helpers: ['lib/**/*.js', 'specs/base.js'],
+      specs: 'specs/*spec.js'
     },
     concat: {
       dist: {
@@ -110,7 +113,7 @@ module.exports = function(grunt) {
   });
 
   grunt.loadNpmTasks('grunt-coffee');
-  grunt.loadNpmTasks('grunt-jasmine');
+  grunt.loadNpmTasks('grunt-jasmine-runner');
 
   grunt.registerTask('default', 'coffee concat min');
   grunt.registerTask('test', 'coffee concat jasmine');
