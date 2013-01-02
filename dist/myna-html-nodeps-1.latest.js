@@ -1,8 +1,8 @@
 /*!
- * Myna for HTML v1.1.0 (no dependencies)
+ * Myna for HTML v1.1.2 (no dependencies)
  * Copyright 2012 Myna Ltd
  * License: BSD 3-clause (http://opensource.org/licenses/BSD-3-Clause)
- * Published: 2012-11-11
+ * Published: 2013-01-02
  * Dependencies:
  *  - jQuery 1.5+ http://jquery.com/download
  *  - JSON.{parse,stringify} https://raw.github.com/douglascrockford/JSON-js/master/json2.js
@@ -23,7 +23,7 @@ Myna = (function(window, document) {
     Myna.defaults = {
       debug: false,
       apiRoot: "//api.mynaweb.com",
-      timeout: 500,
+      timeout: 1200,
       cssClass: "myna",
       dataPrefix: null,
       sticky: true,
@@ -197,7 +197,7 @@ Myna = (function(window, document) {
     };
 
     Myna.prototype.saveSuggestions = function(suggestions) {
-      var cookieName, cookieOptions, cookieValue, savedPath;
+      var cookie, cookieName, cookieOptions, cookieValue, savedPath;
       this.log("saveSuggestions", suggestions);
       try {
         cookieName = this.options.cookieName;
@@ -206,8 +206,9 @@ Myna = (function(window, document) {
         savedPath = $.cookie.defaults.path;
         $.cookie.defaults.path = this.options.cookieOptions.path;
         this.log(" - ", cookieName, cookieValue, cookieOptions);
-        $.cookie(cookieName, cookieValue);
+        cookie = $.cookie(cookieName, cookieValue, cookieOptions);
         this.log(" - ", document.cookie);
+        return cookie;
       } finally {
         $.cookie.defaults.path = savedPath;
       }
