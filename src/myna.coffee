@@ -156,7 +156,7 @@ Myna = do (window, document) ->
 
         this.log(" - ", cookieName, cookieValue, cookieOptions)
 
-        cookie = $.cookie(cookieName, cookieValue)
+        cookie = $.cookie(cookieName, cookieValue, cookieOptions)
 
         this.log(" - ", document.cookie)
 
