@@ -29,6 +29,18 @@ describe("myna.{load,save,clear}Suggestions", function() {
     myna.clearSuggestions();
     expect(myna.loadSuggestions()).toEqual([]);
   });
+
+  it("should set cookie expiry date", function() {
+    var myna = Myna.init();
+
+    myna.clearSuggestions();
+    expect(myna.loadSuggestions()).toEqual([]);
+
+    var cookie = myna.saveSuggestions(["foo"]);
+    expect(cookie).toMatch(/expires/)
+
+    myna.clearSuggestions();
+  })
 });
 
 describe("myna.{load,save,delete}Suggestion", function() {

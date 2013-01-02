@@ -140,8 +140,9 @@ Myna = do (window, document) ->
         $.cookie.defaults.path = savedPath
 
     # Save an array of remembered suggestions to the Myna cookie.
+    # Returns the cookie string that was set, which is useful for testing
     #
-    # arrayOf(suggestionObject) -> void
+    # arrayOf(suggestionObject) -> string
     saveSuggestions: (suggestions) =>
       this.log("saveSuggestions", suggestions)
 
@@ -155,13 +156,14 @@ Myna = do (window, document) ->
 
         this.log(" - ", cookieName, cookieValue, cookieOptions)
 
-        $.cookie(cookieName, cookieValue)
+        cookie = $.cookie(cookieName, cookieValue)
 
         this.log(" - ", document.cookie)
+
+        cookie
       finally
         $.cookie.defaults.path = savedPath
 
-      return
 
     # Delete the Myna cookie that stores remembered suggestions
     # (useful for debugging).
