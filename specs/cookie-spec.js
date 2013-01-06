@@ -18,7 +18,7 @@ describe("$.cookie", function() {
 
 describe("myna.{load,save,clear}Suggestions", function() {
   it("should save and load data", function() {
-    var myna = Myna.init();
+    var myna = Myna.init({ experiments: [{ uuid: 'uuid1', class: 'expt1' }] });
 
     myna.clearSuggestions();
     expect(myna.loadSuggestions()).toEqual([]);
@@ -31,7 +31,7 @@ describe("myna.{load,save,clear}Suggestions", function() {
   });
 
   it("should set cookie expiry date", function() {
-    var myna = Myna.init();
+    var myna = Myna.init({ experiments: [{ uuid: 'uuid1', class: 'expt1' }] });
 
     myna.clearSuggestions();
     expect(myna.loadSuggestions()).toEqual([]);
@@ -45,7 +45,10 @@ describe("myna.{load,save,clear}Suggestions", function() {
 
 describe("myna.{load,save,delete}Suggestion", function() {
   it("should save and load data", function() {
-    var myna = Myna.init();
+    var myna = Myna.init({ experiments: [
+      { uuid: 'uuid1', class: 'expt1' },
+      { uuid: 'uuid2', class: 'expt2' }
+    ]});
 
     var uuid1 = 'uuid1';
     var uuid2 = 'uuid2';
@@ -70,5 +73,72 @@ describe("myna.{load,save,delete}Suggestion", function() {
     expect(myna.loadSuggestions()).toEqual({ uuid2 : expt2 });
     expect(myna.loadSuggestion(uuid1)).toEqual(null);
     expect(myna.loadSuggestion(uuid2)).toEqual(expt2);
+  });
+});
+
+describe("onSave", function() {
+  it("should be called on save", function() {
+    var onSave  = jasmine.createSpy("onSave");
+    var success = jasmine.createSpy("success");
+    var error   = jasmine.createSpy("error");
+
+    var myna = Myna.init({
+      timeout: 25,
+      experiments: [{ uuid: 'uuid1', class: 'expt1', sticky: false }],
+      onSave: onSave
+    });
+
+    spyOn(Myna.$, "ajax").andCallFake(fakeWorkingServer());
+
+    runs(function() {
+      myna.clearSuggestions();
+      myna.suggest('uuid1', success, error);
+    });
+
+    waits(myna.options.timeout);
+
+    runs(function() {
+      expect(onSave.mostRecentCall.args).toEqual([
+        { uuid: 'uuid1', choice: 'variant1', token: 'token1', skipped: false, rewarded: false }
+      ]);
+      expect(success.mostRecentCall.args).toEqual([
+        { uuid: 'uuid1', choice: 'variant1', token: 'token1', skipped: false, rewarded: false }
+      ]);
+      expect(error).not.toHaveBeenCalled();
+    });
+  });
+
+  it("should be able to customise the saved data", function() {
+    var onSave  = jasmine.createSpy("onSave").andCallFake(function(obj) {
+      return $.extend({ foo: 'bar' }, obj);
+    });
+    var success = jasmine.createSpy("success");
+    var error   = jasmine.createSpy("error");
+
+    var myna = Myna.init({
+      timeout: 25,
+      experiments: [{ uuid: 'uuid1', class: 'expt1', sticky: false }],
+      onSave: onSave
+    });
+
+    spyOn(Myna.$, "ajax").andCallFake(fakeWorkingServer());
+
+    runs(function() {
+      myna.clearSuggestions();
+      myna.suggest('uuid1', success, error);
+    });
+
+    waits(myna.options.timeout);
+
+    runs(function() {
+      expect(onSave.callCount).toEqual(1);
+      expect(onSave.mostRecentCall.args).toEqual([
+        { uuid: 'uuid1', choice: 'variant1', token: 'token1', skipped: false, rewarded: false }
+      ]);
+      expect(success.mostRecentCall.args).toEqual([
+        { uuid: 'uuid1', choice: 'variant1', token: 'token1', skipped: false, rewarded: false, foo: 'bar' }
+      ]);
+      expect(error).not.toHaveBeenCalled();
+    });
   });
 });

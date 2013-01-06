@@ -1,17 +1,32 @@
 function fakeWorkingServer(options) {
   options = options || {};
 
-  var tokenNum  = 1;
-  var choices   = options.choices || ["variant1", "variant2"];
-  var choiceNum = 0;
+  var choices = options.choices || ["variant1", "variant2"];
+  var choiceNums = {};
+  var tokenNums = {};
+
+  function choiceNum(suggestUrl) {
+    var last = choiceNums[suggestUrl];
+    var curr = typeof last == "undefined" ? 0 : (last + 1) % choices.length;
+    choiceNums[suggestUrl] = curr;
+    return curr;
+  }
+
+  function tokenNum(suggestUrl) {
+    var last = tokenNums[suggestUrl];
+    var curr = typeof last == "undefined" ? 1 : last + 1;
+    tokenNums[suggestUrl] = curr;
+    return curr;
+  }
 
   return function(params) {
     if(/suggest/.test(params.url)) {
-      var token  = "token" + tokenNum;
-      var choice = choices[choiceNum];
+      var choice = choices[choiceNum(params.url)];
+      var token  = "token" + tokenNum(params.url);
 
-      tokenNum   = tokenNum + 1;
-      choiceNum  = (choiceNum + 1) % choices.length;
+      console.log(" ### ");
+      console.log(" === ", choiceNums);
+      console.log(" === ", tokenNums);
 
       return new $.Deferred().done(params.success).resolve({
         "typename" : "suggestion",
@@ -48,34 +63,10 @@ function resetDom() {
   });
 }
 
-function addExperiments() {
-  // Add #experiments
-  $('body').append('<div id="experiments" style="padding: 20px 0; text-align: center; font-family: sans-serif; font-size: .8em"> \
-    Test data: \
-    <span class="expt1" data-show="variant1">Ex1v1</span> \
-    <span class="expt1" data-show="variant2">Ex1v2</span> \
-    <a class="expt1" data-goal="click" href="#">Ex1goal</a> \
-    <span class="expt2" data-show="variant1">Ex2v1</span> \
-    <span class="expt2" data-show="variant2">Ex2v2</span> \
-    <a class="expt2" data-goal="click" href="#">Ex2goal</a> \
-    </div>');
-}
-
-function removeExperiments() {
-  // Remove #experiments
-  $('#experiments').remove();
-}
-
-
 beforeEach(function() {
   this.addMatchers({
     toBeOfType: function(expected) {
       return typeof(this.actual) == expected;
     }
   });
-  addExperiments();
 });
-
-afterEach(function() {
-  removeExperiments();
-})

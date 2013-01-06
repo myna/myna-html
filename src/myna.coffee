@@ -1,16 +1,5 @@
-Myna = do (window, document) ->
-
-  # Cache a reference to jQuery:
-  $ = window.jQuery
-
+Myna = do (window, document, $ = jQuery) ->
   # Extends the supplied jQuery object with Myna functionality and returns it.
-  # This new super-jQuery object is what gets bound as "window.Myna".
-  #
-  # Calls "jQuery.noConflict()" to ensure Myna doesn't conflict with existing
-  # copies of jQuery on the user's site.
-  #
-  # Window and document are supplied as extra arguments to make them eligible
-  # for code minification.
   #
   # jQuery window document -> jQuery
   class Myna
@@ -22,16 +11,35 @@ Myna = do (window, document) ->
     @defaults:
       debug:         false
       apiRoot:       "//api.mynaweb.com"
-      timeout:       1200    # milliseconds
+      timeout:       1200 # milliseconds
       cssClass:      "myna"
       dataPrefix:    null
       sticky:        true
-      skipChance:    0.0    # [0.0, 1.0]
       cookieName:    "myna"
       cookieOptions:
         path:        "/"
-        expires:     7      # days
+        expires:     7 # days
       experiments:   []
+      # Callback, called just before a suggestion is saved to a cookie.
+      # - single argument is data to be saved;
+      # - can optionally return an updated version of the data.
+      #
+      # object -> any(object, void)
+      onSave:        ((stored) -> stored)
+      # Callback, called whenever a suggestion is loaded from Myna or a cookie.
+      # - first argument is the suggestion data retrieved.
+      # - second argument is a boolean:
+      #   - true if the data was loaded from a cookie;
+      #   - false if it came from Myna.
+      #
+      # object boolean -> void
+      onSuggest:     ((stored, fromCookie) ->)
+      # Callback, called to determine whether a user should be targetted in a test.
+      #
+      # Accepts no arguments. Returns true (run the test) or false (skip the test).
+      #
+      # -> boolean
+      target:        (-> true)
 
     # Factory method. Attach a call to Myna.initNow to the document.ready event.
     # Because we're using jQuery 1.5+, this guarantees Myna will be initialised
@@ -55,7 +63,9 @@ Myna = do (window, document) ->
         cssClass:   this.options.cssClass
         dataPrefix: this.options.dataPrefix
         sticky:     this.options.sticky
-        skipChance: this.options.skipChance
+        onSave:     this.options.onSave
+        onSuggest:  this.options.onSuggest
+        target:     this.options.target
         timeout:    this.options.timeout
 
       $.each this.options.experiments, (index, options) =>
@@ -94,9 +104,12 @@ Myna = do (window, document) ->
     exptOption: (uuid, name, defaultFunc = -> undefined) =>
       this.exptOptions(uuid)[name] || defaultFunc()
 
-    # Should we skip a suggestion?
-    skipSuggestion: (uuid) =>
-      Math.random() < this.exptOption(uuid, "skipChance")
+    # Should we target the current user with the specified test?
+    #
+    # uuidString -> boolean
+    target: (uuid) =>
+      func = this.exptOption(uuid, "target")
+      !!func()
 
     # Returns the default variant for the specified experiment.
     #
@@ -189,12 +202,24 @@ Myna = do (window, document) ->
     saveSuggestion: (uuid, choice, token, skipped = false, rewarded = false) =>
       this.log("saveSuggestion", uuid, choice, token, skipped, rewarded)
 
-      stored =
+      onSave = this.exptOption(uuid, "onSave", (-> (x) -> x))
+
+      uncustomised =
         uuid:     uuid
         choice:   choice
         token:    token
         skipped:  skipped
         rewarded: rewarded
+
+      customised = onSave(uncustomised)
+
+      # If the user has written onSave to return a customised cookie, save that.
+      # Otherwise save the uncustomised data.
+      stored = if typeof customised == "object" then customised else uncustomised
+
+      this.log(" - uncustomised", uncustomised)
+      this.log(" - customised", customised)
+      this.log(" - stored", stored)
 
       suggestions = this.loadSuggestions()
       suggestions[uuid] = stored
@@ -335,12 +360,19 @@ Myna = do (window, document) ->
       sticky = this.exptOption(uuid, "sticky")
       stored = sticky && this.loadSuggestion(uuid)
 
-      if stored
+      # callback for customising the behaviour of suggestions
+      onSuggest = this.exptOption(uuid, "onSuggest", (-> (->)))
+      successWrapper = (stored) ->
+        onSuggest(stored, true)
         success(stored)
-      else if this.skipSuggestion(uuid)
-        this.suggestSkip(uuid, success, error)
+
+      if stored
+        onSuggest(stored, false)
+        success(stored)
+      else if this.target(uuid)
+        this.suggestAjax(uuid, successWrapper, error)
       else
-        this.suggestAjax(uuid, success, error)
+        this.suggestSkip(uuid, successWrapper, error)
 
     # Reward Myna via JSONP.
     #

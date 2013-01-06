@@ -1,5 +1,4 @@
 describe("data-show", function() {
-
   it("should show/hide elements", function() {
     this.myna = new Myna({ experiments: [
       { uuid: 'uuid1', class: 'expt1', sticky: false }
@@ -34,9 +33,9 @@ describe("data-show", function() {
 
     $("#experiments").html(
       ' <span id="v1" class="expt1" data-show="a">V1</span> ' +
-      ' <span id="v2" class="expt1" data-show="c">V2</span> ' +
-      ' <span id="v3" class="expt2" data-show="b">V1</span> ' +
-      ' <span id="v4" class="expt2" data-show="a">V2</span> '
+      ' <span id="v2" class="expt1" data-show="b">V2</span> ' +
+      ' <span id="v3" class="expt2" data-show="a">V1</span> ' +
+      ' <span id="v4" class="expt2" data-show="c">V2</span> '
     );
 
     expect($("#v1").is(":visible")).toEqual(true);
@@ -53,6 +52,12 @@ describe("data-show", function() {
     this.myna.initExperiments();
     expect($("#v1").is(":visible")).toEqual(false);
     expect($("#v2").is(":visible")).toEqual(true);
+    expect($("#v3").is(":visible")).toEqual(false);
+    expect($("#v4").is(":visible")).toEqual(false);
+
+    this.myna.initExperiments();
+    expect($("#v1").is(":visible")).toEqual(false);
+    expect($("#v2").is(":visible")).toEqual(false);
     expect($("#v3").is(":visible")).toEqual(false);
     expect($("#v4").is(":visible")).toEqual(true);
   });
@@ -161,12 +166,12 @@ describe("data-bind", function() {
     expect($("#v1").attr("title")).toEqual("a");
     expect($("#v1").attr("style")).toEqual(null);
     expect($("#v2").attr("title")).toEqual(null);
-    expect($("#v2").attr("style")).toEqual("b");
+    expect($("#v2").attr("style")).toEqual("a");
 
     this.myna.initExperiments();
-    expect($("#v1").attr("title")).toEqual("c");
+    expect($("#v1").attr("title")).toEqual("b");
     expect($("#v1").attr("style")).toEqual(null);
     expect($("#v2").attr("title")).toEqual(null);
-    expect($("#v2").attr("style")).toEqual("a");
+    expect($("#v2").attr("style")).toEqual("b");
   });
 });
