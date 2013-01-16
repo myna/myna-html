@@ -10378,6 +10378,7 @@ Myna = (function(window, document) {
           success(stored);
         } else {
           _this.log("reward received " + data.typename, data, textStatus, jqXHR);
+          _this.deleteSuggestion(uuid);
           error(jqXHR, textStatus, data);
         }
       };
