@@ -2,7 +2,7 @@
  * Myna for HTML v1.1.2 (standalone)
  * Copyright 2012 Myna Ltd
  * License: BSD 3-clause (http://opensource.org/licenses/BSD-3-Clause)
- * Published: 2013-01-02
+ * Published: 2013-01-16
  * Includes:
  *  - jQuery 1.8.2 http://jquery.com/download
  *  - JSON.{parse,stringify} https://raw.github.com/douglascrockford/JSON-js/master/json2.js
@@ -10378,6 +10378,8 @@ Myna = (function(window, document) {
           success(stored);
         } else {
           _this.log("reward received " + data.typename, data, textStatus, jqXHR);
+          _this.deleteSuggestion(uuid);
+          error(jqXHR, textStatus, data);
         }
       };
       wrappedError = function(jqXHR, textStatus, errorThrown) {

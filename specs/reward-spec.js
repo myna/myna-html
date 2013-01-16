@@ -101,6 +101,37 @@ describe("myna.reward", function() {
     });
   });
 
+  it("should call error handler if response is not ok", function() {
+    spyOn(Myna.$, "ajax").andCallFake(fakeProblematicServer());
+
+    var success = jasmine.createSpy("success");
+    var error   = jasmine.createSpy("error");
+
+    runs(function() {
+      this.myna.suggest('uuid1');
+    });
+
+    waits(this.myna.options.timeout);
+
+    runs(function() {
+      this.myna.reward('uuid1', 1.0, success, error);
+    });
+
+    waits(this.myna.options.timeout);
+
+    runs(function() {
+      expect(success).not.toHaveBeenCalled();
+      expect(error.mostRecentCall.args[2]).toEqual({
+        "typename" : "problem",
+        "subtype"  : 400,
+        "messages" : [
+          {"typename": "malformedRequest"},
+          {"typename": "info", "message": "Reward token not present in cache"}
+        ]
+      });
+    });
+  });
+
   it("should call error handler if server offline", function() {
     var spy     = spyOn(Myna.$, "ajax").andCallFake(fakeWorkingServer());
 
