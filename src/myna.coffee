@@ -366,6 +366,7 @@ Myna = do (window, document) ->
           success(stored)
         else
           this.log("reward received #{data.typename}", data, textStatus, jqXHR)
+          this.deleteSuggestion(uuid)
           error(jqXHR, textStatus, data)
         return
 
