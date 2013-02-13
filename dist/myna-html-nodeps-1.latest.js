@@ -19,8 +19,8 @@ Myna = (function(window, document, $) {
     Myna.$ = $;
 
     Myna.defaults = {
-      debug: true,
-      apiRoot: window.location.protocol === "file:" ? "http://api.mynaweb.com" : "//api.mynaweb.com",
+      debug: false,
+      apiRoot: "//api.mynaweb.com",
       timeout: 1200,
       cssClass: "myna",
       dataPrefix: null,
@@ -422,6 +422,8 @@ Myna = (function(window, document, $) {
           success(stored);
         } else {
           _this.log("reward received " + data.typename, data, textStatus, jqXHR);
+          _this.deleteSuggestion(uuid);
+          error(jqXHR, textStatus, data);
         }
       };
       wrappedError = function(jqXHR, textStatus, errorThrown) {

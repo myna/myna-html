@@ -1,8 +1,8 @@
 /*!
- * Myna for HTML v1.2 (standalone)
+ * Myna for HTML v1.1.3 (standalone)
  * Copyright 2012 Myna Ltd
  * License: BSD 3-clause (http://opensource.org/licenses/BSD-3-Clause)
- * Published: 2013-02-13
+ * Published: 2013-01-25
  * Includes:
  *  - jQuery 1.8.2 http://jquery.com/download
  *  - JSON.{parse,stringify} https://raw.github.com/douglascrockford/JSON-js/master/json2.js
@@ -10016,7 +10016,9 @@ var Myna,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __slice = [].slice;
 
-Myna = (function(window, document, $) {
+Myna = (function(window, document) {
+  var $;
+  $ = window.jQuery;
   return Myna = (function() {
 
     Myna.$ = $;
@@ -10028,21 +10030,13 @@ Myna = (function(window, document, $) {
       cssClass: "myna",
       dataPrefix: null,
       sticky: true,
+      skipChance: 0.0,
       cookieName: "myna",
       cookieOptions: {
         path: "/",
         expires: 7
       },
-      experiments: [],
-      callbacks: {
-        beforeSave: (function(stored) {
-          return stored;
-        }),
-        beforeSuggest: (function(stored, fromCookie) {}),
-        target: (function() {
-          return true;
-        })
-      }
+      experiments: []
     };
 
     Myna.init = function(options) {
@@ -10060,7 +10054,7 @@ Myna = (function(window, document, $) {
     };
 
     function Myna(options) {
-      var exptDefaults, _ref, _ref1, _ref2,
+      var exptDefaults,
         _this = this;
       if (options == null) {
         options = {};
@@ -10105,9 +10099,7 @@ Myna = (function(window, document, $) {
 
       this.defaultVariant = __bind(this.defaultVariant, this);
 
-      this.target = __bind(this.target, this);
-
-      this.exptCallback = __bind(this.exptCallback, this);
+      this.skipSuggestion = __bind(this.skipSuggestion, this);
 
       this.exptOption = __bind(this.exptOption, this);
 
@@ -10123,18 +10115,13 @@ Myna = (function(window, document, $) {
         cssClass: this.options.cssClass,
         dataPrefix: this.options.dataPrefix,
         sticky: this.options.sticky,
-        callbacks: {
-          beforeSave: (_ref = this.options.callbacks) != null ? _ref.beforeSave : void 0,
-          beforeSuggest: (_ref1 = this.options.callbacks) != null ? _ref1.beforeSuggest : void 0,
-          target: (_ref2 = this.options.callbacks) != null ? _ref2.target : void 0
-        },
+        skipChance: this.options.skipChance,
         timeout: this.options.timeout
       };
       $.each(this.options.experiments, function(index, options) {
-        var cssClass, sticky, uuid;
+        var cssClass, uuid;
         uuid = options.uuid;
         cssClass = options['class'];
-        sticky = options.sticky;
         if (uuid && cssClass) {
           options = $.extend({}, exptDefaults, options);
           return _this.options.experiments[uuid] = options;
@@ -10176,24 +10163,8 @@ Myna = (function(window, document, $) {
       return this.exptOptions(uuid)[name] || defaultFunc();
     };
 
-    Myna.prototype.exptCallback = function(uuid, name, defaultFunc) {
-      var _ref;
-      if (defaultFunc == null) {
-        defaultFunc = function() {
-          return void 0;
-        };
-      }
-      return ((_ref = this.exptOptions(uuid).callbacks) != null ? _ref[name] : void 0) || defaultFunc();
-    };
-
-    Myna.prototype.target = function(uuid) {
-      var func;
-      func = this.exptCallback(uuid, "target", (function() {
-        return function() {
-          return 1.0;
-        };
-      }));
-      return func();
+    Myna.prototype.skipSuggestion = function(uuid) {
+      return Math.random() < this.exptOption(uuid, "skipChance");
     };
 
     Myna.prototype.defaultVariant = function(uuid) {
@@ -10260,7 +10231,7 @@ Myna = (function(window, document, $) {
     };
 
     Myna.prototype.saveSuggestion = function(uuid, choice, token, skipped, rewarded) {
-      var beforeSave, customised, stored, suggestions, uncustomised;
+      var stored, suggestions;
       if (skipped == null) {
         skipped = false;
       }
@@ -10268,23 +10239,13 @@ Myna = (function(window, document, $) {
         rewarded = false;
       }
       this.log("saveSuggestion", uuid, choice, token, skipped, rewarded);
-      beforeSave = this.exptCallback(uuid, "beforeSave", (function() {
-        return function(x) {
-          return x;
-        };
-      }));
-      uncustomised = {
+      stored = {
         uuid: uuid,
         choice: choice,
         token: token,
         skipped: skipped,
         rewarded: rewarded
       };
-      customised = beforeSave(uncustomised);
-      stored = typeof customised === "object" ? customised : uncustomised;
-      this.log(" - uncustomised", uncustomised);
-      this.log(" - customised", customised);
-      this.log(" - stored", stored);
       suggestions = this.loadSuggestions();
       suggestions[uuid] = stored;
       this.saveSuggestions(suggestions);
@@ -10383,7 +10344,7 @@ Myna = (function(window, document, $) {
     };
 
     Myna.prototype.suggest = function(uuid, success, error) {
-      var beforeSuggest, sticky, stored, successWrapper;
+      var sticky, stored;
       if (success == null) {
         success = (function() {});
       }
@@ -10393,20 +10354,12 @@ Myna = (function(window, document, $) {
       this.log("suggest", uuid, success, error);
       sticky = this.exptOption(uuid, "sticky");
       stored = sticky && this.loadSuggestion(uuid);
-      beforeSuggest = this.exptCallback(uuid, "beforeSuggest", (function() {
-        return function() {};
-      }));
-      successWrapper = function(stored) {
-        beforeSuggest(stored, true);
-        return success(stored);
-      };
       if (stored) {
-        beforeSuggest(stored, false);
         return success(stored);
-      } else if (this.target(uuid)) {
-        return this.suggestAjax(uuid, successWrapper, error);
+      } else if (this.skipSuggestion(uuid)) {
+        return this.suggestSkip(uuid, success, error);
       } else {
-        return this.suggestSkip(uuid, successWrapper, error);
+        return this.suggestAjax(uuid, success, error);
       }
     };
 
@@ -10612,7 +10565,7 @@ Myna = (function(window, document, $) {
     return Myna;
 
   })();
-})(window, document, jQuery);
+})(window, document);
 
 
 jQuery.noConflict(true);
