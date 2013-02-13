@@ -94,7 +94,7 @@ describe("myna.suggest", function() {
 // If a sticky experiment is marked as skipped,     it stays skipped
 // If a non-sticky experiment is marked as skipped, it doesn't stay skipped
 
-describe("onSuggest", function() {
+describe("beforeSuggest", function() {
   it("should be called with the correct arguments", function() {
     var stickySuggest   = jasmine.createSpy("stickySuggest");
     var stickySuccess   = jasmine.createSpy("stickySuccess");
@@ -107,8 +107,22 @@ describe("onSuggest", function() {
     var myna = Myna.init({
       timeout: 25,
       experiments: [
-        { uuid: 'sticky-uuid', class: 'sticky-class', sticky: true, onSuggest: stickySuggest },
-        { uuid: 'non-stick-uuid', class: 'non-sticky-class', sticky: false, onSuggest: nonStickSuggest }
+        {
+          uuid: 'sticky-uuid',
+          class: 'sticky-class',
+          sticky: true,
+          callbacks: {
+            beforeSuggest: stickySuggest
+          }
+        },
+        {
+          uuid: 'non-stick-uuid',
+          class: 'non-sticky-class',
+          sticky: false,
+          callbacks: {
+            beforeSuggest: nonStickSuggest
+          }
+        }
       ]
     });
 

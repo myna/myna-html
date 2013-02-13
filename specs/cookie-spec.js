@@ -76,16 +76,18 @@ describe("myna.{load,save,delete}Suggestion", function() {
   });
 });
 
-describe("onSave", function() {
+describe("beforeSave", function() {
   it("should be called on save", function() {
-    var onSave  = jasmine.createSpy("onSave");
+    var beforeSave  = jasmine.createSpy("beforeSave");
     var success = jasmine.createSpy("success");
     var error   = jasmine.createSpy("error");
 
     var myna = Myna.init({
       timeout: 25,
       experiments: [{ uuid: 'uuid1', class: 'expt1', sticky: false }],
-      onSave: onSave
+      callbacks: {
+        beforeSave: beforeSave
+      }
     });
 
     spyOn(Myna.$, "ajax").andCallFake(fakeWorkingServer());
@@ -98,7 +100,7 @@ describe("onSave", function() {
     waits(myna.options.timeout);
 
     runs(function() {
-      expect(onSave.mostRecentCall.args).toEqual([
+      expect(beforeSave.mostRecentCall.args).toEqual([
         { uuid: 'uuid1', choice: 'variant1', token: 'token1', skipped: false, rewarded: false }
       ]);
       expect(success.mostRecentCall.args).toEqual([
@@ -109,7 +111,7 @@ describe("onSave", function() {
   });
 
   it("should be able to customise the saved data", function() {
-    var onSave  = jasmine.createSpy("onSave").andCallFake(function(obj) {
+    var beforeSave = jasmine.createSpy("beforeSave").andCallFake(function(obj) {
       return $.extend({ foo: 'bar' }, obj);
     });
     var success = jasmine.createSpy("success");
@@ -118,7 +120,9 @@ describe("onSave", function() {
     var myna = Myna.init({
       timeout: 25,
       experiments: [{ uuid: 'uuid1', class: 'expt1', sticky: false }],
-      onSave: onSave
+      callbacks: {
+        beforeSave: beforeSave
+      }
     });
 
     spyOn(Myna.$, "ajax").andCallFake(fakeWorkingServer());
@@ -131,8 +135,8 @@ describe("onSave", function() {
     waits(myna.options.timeout);
 
     runs(function() {
-      expect(onSave.callCount).toEqual(1);
-      expect(onSave.mostRecentCall.args).toEqual([
+      expect(beforeSave.callCount).toEqual(1);
+      expect(beforeSave.mostRecentCall.args).toEqual([
         { uuid: 'uuid1', choice: 'variant1', token: 'token1', skipped: false, rewarded: false }
       ]);
       expect(success.mostRecentCall.args).toEqual([

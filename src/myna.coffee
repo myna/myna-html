@@ -20,26 +20,27 @@ Myna = do (window, document, $ = jQuery) ->
         path:        "/"
         expires:     7 # days
       experiments:   []
-      # Callback, called just before a suggestion is saved to a cookie.
-      # - single argument is data to be saved;
-      # - can optionally return an updated version of the data.
-      #
-      # object -> any(object, void)
-      onSave:        ((stored) -> stored)
-      # Callback, called whenever a suggestion is loaded from Myna or a cookie.
-      # - first argument is the suggestion data retrieved.
-      # - second argument is a boolean:
-      #   - true if the data was loaded from a cookie;
-      #   - false if it came from Myna.
-      #
-      # object boolean -> void
-      onSuggest:     ((stored, fromCookie) ->)
-      # Callback, called to determine whether a user should be targetted in a test.
-      #
-      # Accepts no arguments. Returns true (run the test) or false (skip the test).
-      #
-      # -> boolean
-      target:        (-> true)
+      callbacks:
+        # Callback, called just before a suggestion is saved to a cookie.
+        # - single argument is data to be saved;
+        # - can optionally return an updated version of the data.
+        #
+        # object -> any(object, void)
+        beforeSave: ((stored) -> stored)
+        # Callback, called whenever a suggestion is loaded from Myna or a cookie.
+        # - first argument is the suggestion data retrieved.
+        # - second argument is a boolean:
+        #   - true if the data was loaded from a cookie;
+        #   - false if it came from Myna.
+        #
+        # object boolean -> void
+        beforeSuggest: ((stored, fromCookie) ->)
+        # Callback, called to determine whether a user should be targetted in a test.
+        #
+        # Accepts no arguments. Returns true (run the test) or false (skip the test).
+        #
+        # -> boolean
+        target: (-> true)
 
     # Factory method. Attach a call to Myna.initNow to the document.ready event.
     # Because we're using jQuery 1.5+, this guarantees Myna will be initialised
@@ -60,17 +61,19 @@ Myna = do (window, document, $ = jQuery) ->
       this.log("constructor", options)
 
       exptDefaults =
-        cssClass:   this.options.cssClass
-        dataPrefix: this.options.dataPrefix
-        sticky:     this.options.sticky
-        onSave:     this.options.onSave
-        onSuggest:  this.options.onSuggest
-        target:     this.options.target
-        timeout:    this.options.timeout
+        cssClass:      this.options.cssClass
+        dataPrefix:    this.options.dataPrefix
+        sticky:        this.options.sticky
+        callbacks:
+          beforeSave:    this.options.callbacks?.beforeSave
+          beforeSuggest: this.options.callbacks?.beforeSuggest
+          target:        this.options.callbacks?.target
+        timeout:       this.options.timeout
 
       $.each this.options.experiments, (index, options) =>
         uuid     = options.uuid
         cssClass = options['class']
+        sticky   = options.sticky
 
         if uuid && cssClass
           options = $.extend({}, exptDefaults, options)
@@ -104,12 +107,18 @@ Myna = do (window, document, $ = jQuery) ->
     exptOption: (uuid, name, defaultFunc = -> undefined) =>
       this.exptOptions(uuid)[name] || defaultFunc()
 
+    # Retrieve an option for an experiment.
+    #
+    # uuidString string [(-> any)] -> any
+    exptCallback: (uuid, name, defaultFunc = -> undefined) =>
+      this.exptOptions(uuid).callbacks?[name] || defaultFunc()
+
     # Should we target the current user with the specified test?
     #
     # uuidString -> boolean
     target: (uuid) =>
-      func = this.exptOption(uuid, "target")
-      !!func()
+      func = this.exptCallback(uuid, "target", (-> (-> 1.0)))
+      func()
 
     # Returns the default variant for the specified experiment.
     #
@@ -202,7 +211,7 @@ Myna = do (window, document, $ = jQuery) ->
     saveSuggestion: (uuid, choice, token, skipped = false, rewarded = false) =>
       this.log("saveSuggestion", uuid, choice, token, skipped, rewarded)
 
-      onSave = this.exptOption(uuid, "onSave", (-> (x) -> x))
+      beforeSave = this.exptCallback(uuid, "beforeSave", (-> (x) -> x))
 
       uncustomised =
         uuid:     uuid
@@ -211,9 +220,9 @@ Myna = do (window, document, $ = jQuery) ->
         skipped:  skipped
         rewarded: rewarded
 
-      customised = onSave(uncustomised)
+      customised = beforeSave(uncustomised)
 
-      # If the user has written onSave to return a customised cookie, save that.
+      # If the user has written beforeSave to return a customised cookie, save that.
       # Otherwise save the uncustomised data.
       stored = if typeof customised == "object" then customised else uncustomised
 
@@ -361,13 +370,13 @@ Myna = do (window, document, $ = jQuery) ->
       stored = sticky && this.loadSuggestion(uuid)
 
       # callback for customising the behaviour of suggestions
-      onSuggest = this.exptOption(uuid, "onSuggest", (-> (->)))
+      beforeSuggest = this.exptCallback(uuid, "beforeSuggest", (-> (->)))
       successWrapper = (stored) ->
-        onSuggest(stored, true)
+        beforeSuggest(stored, true)
         success(stored)
 
       if stored
-        onSuggest(stored, false)
+        beforeSuggest(stored, false)
         success(stored)
       else if this.target(uuid)
         this.suggestAjax(uuid, successWrapper, error)

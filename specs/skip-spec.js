@@ -3,8 +3,21 @@ describe("experiments with target() == false", function() {
     this.myna = Myna.init({
       timeout: 25,
       experiments: [
-        { uuid: 'uuid1', class: 'expt1', target: function() { return false; }, default: 'default1' },
-        { uuid: 'uuid2', class: 'expt2', target: function() { return false; } }
+        {
+          uuid: 'uuid1',
+          class: 'expt1',
+          default: 'default1',
+          callbacks: {
+            target: function() { return false; }
+          },
+        },
+        {
+          uuid: 'uuid2',
+          class: 'expt2',
+          callbacks: {
+            target: function() { return false; }
+          }
+        }
       ]
     });
     this.myna.clearSuggestions();

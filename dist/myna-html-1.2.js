@@ -2,7 +2,7 @@
  * Myna for HTML v1.2 (standalone)
  * Copyright 2012 Myna Ltd
  * License: BSD 3-clause (http://opensource.org/licenses/BSD-3-Clause)
- * Published: 2013-01-06
+ * Published: 2013-02-13
  * Includes:
  *  - jQuery 1.8.2 http://jquery.com/download
  *  - JSON.{parse,stringify} https://raw.github.com/douglascrockford/JSON-js/master/json2.js
@@ -10022,8 +10022,8 @@ Myna = (function(window, document, $) {
     Myna.$ = $;
 
     Myna.defaults = {
-      debug: false,
-      apiRoot: "//api.mynaweb.com",
+      debug: true,
+      apiRoot: window.location.protocol === "file:" ? "http://api.mynaweb.com" : "//api.mynaweb.com",
       timeout: 1200,
       cssClass: "myna",
       dataPrefix: null,
@@ -10034,13 +10034,15 @@ Myna = (function(window, document, $) {
         expires: 7
       },
       experiments: [],
-      onSave: (function(stored) {
-        return stored;
-      }),
-      onSuggest: (function(stored, fromCookie) {}),
-      target: (function() {
-        return true;
-      })
+      callbacks: {
+        beforeSave: (function(stored) {
+          return stored;
+        }),
+        beforeSuggest: (function(stored, fromCookie) {}),
+        target: (function() {
+          return true;
+        })
+      }
     };
 
     Myna.init = function(options) {
@@ -10058,7 +10060,7 @@ Myna = (function(window, document, $) {
     };
 
     function Myna(options) {
-      var exptDefaults,
+      var exptDefaults, _ref, _ref1, _ref2,
         _this = this;
       if (options == null) {
         options = {};
@@ -10105,6 +10107,8 @@ Myna = (function(window, document, $) {
 
       this.target = __bind(this.target, this);
 
+      this.exptCallback = __bind(this.exptCallback, this);
+
       this.exptOption = __bind(this.exptOption, this);
 
       this.exptOptions = __bind(this.exptOptions, this);
@@ -10119,15 +10123,18 @@ Myna = (function(window, document, $) {
         cssClass: this.options.cssClass,
         dataPrefix: this.options.dataPrefix,
         sticky: this.options.sticky,
-        onSave: this.options.onSave,
-        onSuggest: this.options.onSuggest,
-        target: this.options.target,
+        callbacks: {
+          beforeSave: (_ref = this.options.callbacks) != null ? _ref.beforeSave : void 0,
+          beforeSuggest: (_ref1 = this.options.callbacks) != null ? _ref1.beforeSuggest : void 0,
+          target: (_ref2 = this.options.callbacks) != null ? _ref2.target : void 0
+        },
         timeout: this.options.timeout
       };
       $.each(this.options.experiments, function(index, options) {
-        var cssClass, uuid;
+        var cssClass, sticky, uuid;
         uuid = options.uuid;
         cssClass = options['class'];
+        sticky = options.sticky;
         if (uuid && cssClass) {
           options = $.extend({}, exptDefaults, options);
           return _this.options.experiments[uuid] = options;
@@ -10169,10 +10176,24 @@ Myna = (function(window, document, $) {
       return this.exptOptions(uuid)[name] || defaultFunc();
     };
 
+    Myna.prototype.exptCallback = function(uuid, name, defaultFunc) {
+      var _ref;
+      if (defaultFunc == null) {
+        defaultFunc = function() {
+          return void 0;
+        };
+      }
+      return ((_ref = this.exptOptions(uuid).callbacks) != null ? _ref[name] : void 0) || defaultFunc();
+    };
+
     Myna.prototype.target = function(uuid) {
       var func;
-      func = this.exptOption(uuid, "target");
-      return !!func();
+      func = this.exptCallback(uuid, "target", (function() {
+        return function() {
+          return 1.0;
+        };
+      }));
+      return func();
     };
 
     Myna.prototype.defaultVariant = function(uuid) {
@@ -10239,7 +10260,7 @@ Myna = (function(window, document, $) {
     };
 
     Myna.prototype.saveSuggestion = function(uuid, choice, token, skipped, rewarded) {
-      var customised, onSave, stored, suggestions, uncustomised;
+      var beforeSave, customised, stored, suggestions, uncustomised;
       if (skipped == null) {
         skipped = false;
       }
@@ -10247,7 +10268,7 @@ Myna = (function(window, document, $) {
         rewarded = false;
       }
       this.log("saveSuggestion", uuid, choice, token, skipped, rewarded);
-      onSave = this.exptOption(uuid, "onSave", (function() {
+      beforeSave = this.exptCallback(uuid, "beforeSave", (function() {
         return function(x) {
           return x;
         };
@@ -10259,7 +10280,7 @@ Myna = (function(window, document, $) {
         skipped: skipped,
         rewarded: rewarded
       };
-      customised = onSave(uncustomised);
+      customised = beforeSave(uncustomised);
       stored = typeof customised === "object" ? customised : uncustomised;
       this.log(" - uncustomised", uncustomised);
       this.log(" - customised", customised);
@@ -10362,7 +10383,7 @@ Myna = (function(window, document, $) {
     };
 
     Myna.prototype.suggest = function(uuid, success, error) {
-      var onSuggest, sticky, stored, successWrapper;
+      var beforeSuggest, sticky, stored, successWrapper;
       if (success == null) {
         success = (function() {});
       }
@@ -10372,15 +10393,15 @@ Myna = (function(window, document, $) {
       this.log("suggest", uuid, success, error);
       sticky = this.exptOption(uuid, "sticky");
       stored = sticky && this.loadSuggestion(uuid);
-      onSuggest = this.exptOption(uuid, "onSuggest", (function() {
+      beforeSuggest = this.exptCallback(uuid, "beforeSuggest", (function() {
         return function() {};
       }));
       successWrapper = function(stored) {
-        onSuggest(stored, true);
+        beforeSuggest(stored, true);
         return success(stored);
       };
       if (stored) {
-        onSuggest(stored, false);
+        beforeSuggest(stored, false);
         return success(stored);
       } else if (this.target(uuid)) {
         return this.suggestAjax(uuid, successWrapper, error);
