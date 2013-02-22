@@ -20,6 +20,8 @@ Myna = do (window, document, $ = jQuery) ->
         path:        "/"
         expires:     7 # days
       experiments:   []
+      # TODO: remove skipChance when updating to v2 - this config option can be removed
+      skipChance:    0.0 # ( deprecated - use callbacks.target instead )
       callbacks:
         # Callback, called just before a suggestion is saved to a cookie.
         # - single argument is data to be saved;
@@ -40,7 +42,8 @@ Myna = do (window, document, $ = jQuery) ->
         # Accepts no arguments. Returns true (run the test) or false (skip the test).
         #
         # -> boolean
-        target: (-> true)
+        # TODO: remove skipChance when updating to v2 - this default value can be reverted to (-> true)
+        target: null # (-> true)
 
     # Factory method. Attach a call to Myna.initNow to the document.ready event.
     # Because we're using jQuery 1.5+, this guarantees Myna will be initialised
@@ -67,7 +70,14 @@ Myna = do (window, document, $ = jQuery) ->
         callbacks:
           beforeSave:    this.options.callbacks?.beforeSave
           beforeSuggest: this.options.callbacks?.beforeSuggest
-          target:        this.options.callbacks?.target
+          # TODO: remove skipChance when updating to v2 - this three-way conditional can be collapsed
+          target:        if this.options.callbacks?.target
+                           this.options.callbacks?.target
+                         else if this.options.skipChance
+                           () =>
+                             Math.random() < this.options.skipChance
+                         else
+                           () => true
         timeout:       this.options.timeout
 
       $.each this.options.experiments, (index, options) =>
@@ -75,8 +85,19 @@ Myna = do (window, document, $ = jQuery) ->
         cssClass = options['class']
         sticky   = options.sticky
 
+        # TODO: remove skipChance when updating to v2 - this statement can be removed
+        if options.skipChance
+          console.log("per-experiment skipChance", options, this.options)
+          unless options.callbacks?.target
+            options.callbacks = $.extend(
+              {},
+              options.callbacks || {},
+              { target: () => Math.random() < options.skipChance }
+            )
+
         if uuid && cssClass
           options = $.extend({}, exptDefaults, options)
+
           this.options.experiments[uuid] = options
         else
           this.log("no uuid or CSS class", options, uuid, cssClass, sticky)

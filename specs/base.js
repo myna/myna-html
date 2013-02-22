@@ -24,10 +24,6 @@ function fakeWorkingServer(options) {
       var choice = choices[choiceNum(params.url)];
       var token  = "token" + tokenNum(params.url);
 
-      console.log(" ### ");
-      console.log(" === ", choiceNums);
-      console.log(" === ", tokenNums);
-
       return new $.Deferred().done(params.success).resolve({
         "typename" : "suggestion",
         "token"    : token,
