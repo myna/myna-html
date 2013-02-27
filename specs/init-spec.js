@@ -24,6 +24,33 @@ describe("Myna.init", function() {
     expect(numMethods1b).toEqual(numMethods2b);
   });
 
+  it("should create a Myna object with the correct Google Analytics options", function() {
+    expect(Myna.defaults.googleAnalytics.enabled).toEqual(true);
+
+    var myna = window.myna = Myna.init({
+      experiments: [
+        { uuid: "uuid1", class: "class1", },
+        { uuid: "uuid2", class: "class2", googleAnalytics: { enabled: true, viewEvent: "foo" } },
+        { uuid: "uuid3", class: "class3", googleAnalytics: { enabled: false, conversionEvent: "bar" } }
+      ]
+    });
+
+    console.log(myna.options);
+    console.log(myna.exptOptions("uuid1"));
+
+    expect(myna.exptGoogleOption("uuid1", "enabled")).toEqual(true);
+    expect(myna.exptGoogleOption("uuid2", "enabled")).toEqual(true);
+    expect(myna.exptGoogleOption("uuid3", "enabled")).toEqual(false);
+
+    expect(myna.exptGoogleOption("uuid1", "viewEvent")).toEqual("uuid1-view");
+    expect(myna.exptGoogleOption("uuid2", "viewEvent")).toEqual("foo");
+    expect(myna.exptGoogleOption("uuid3", "viewEvent")).toEqual("uuid3-view");
+
+    expect(myna.exptGoogleOption("uuid1", "conversionEvent")).toEqual("uuid1-conversion");
+    expect(myna.exptGoogleOption("uuid2", "conversionEvent")).toEqual("uuid2-conversion");
+    expect(myna.exptGoogleOption("uuid3", "conversionEvent")).toEqual("bar");
+  });
+
   it("should create default callbacks", function() {
     var myna = Myna.init({
       experiments: [{
@@ -31,6 +58,8 @@ describe("Myna.init", function() {
         class: 'myna'
       }]
     });
+
+    console.log(myna.options);
 
     expect(typeof myna.exptCallback("uuid1", "beforeSave")).toBe("function");
     expect(typeof myna.exptCallback("uuid1", "beforeSuggest")).toBe("function");

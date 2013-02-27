@@ -2,7 +2,7 @@
  * Myna for HTML v1.2 (no dependencies)
  * Copyright 2012 Myna Ltd
  * License: BSD 3-clause (http://opensource.org/licenses/BSD-3-Clause)
- * Published: 2013-02-22
+ * Published: 2013-02-27
  * Dependencies:
  *  - jQuery 1.5+ http://jquery.com/download
  *  - JSON.{parse,stringify} https://raw.github.com/douglascrockford/JSON-js/master/json2.js
@@ -32,6 +32,9 @@ Myna = (function(window, document, $) {
       },
       experiments: [],
       skipChance: 0.0,
+      googleAnalytics: {
+        enabled: true
+      },
       callbacks: {
         beforeSave: (function(stored) {
           return stored;
@@ -56,7 +59,7 @@ Myna = (function(window, document, $) {
     };
 
     function Myna(options) {
-      var exptDefaults, _ref, _ref1, _ref2, _ref3,
+      var exptDefaults, expts, _ref, _ref1, _ref2, _ref3,
         _this = this;
       if (options == null) {
         options = {};
@@ -85,6 +88,10 @@ Myna = (function(window, document, $) {
 
       this.suggestAjax = __bind(this.suggestAjax, this);
 
+      this.trackGoogleRewardEvent = __bind(this.trackGoogleRewardEvent, this);
+
+      this.trackGoogleSuggestEvent = __bind(this.trackGoogleSuggestEvent, this);
+
       this.ajax = __bind(this.ajax, this);
 
       this.loadSuggestion = __bind(this.loadSuggestion, this);
@@ -104,6 +111,8 @@ Myna = (function(window, document, $) {
       this.target = __bind(this.target, this);
 
       this.exptCallback = __bind(this.exptCallback, this);
+
+      this.exptGoogleOption = __bind(this.exptGoogleOption, this);
 
       this.exptOption = __bind(this.exptOption, this);
 
@@ -130,28 +139,36 @@ Myna = (function(window, document, $) {
         },
         timeout: this.options.timeout
       };
+      expts = {};
       $.each(this.options.experiments, function(index, options) {
-        var cssClass, sticky, uuid, _ref4;
+        var cssClass, googleDefaults, sticky, uuid, _ref4;
         uuid = options.uuid;
         cssClass = options['class'];
         sticky = options.sticky;
         if (options.skipChance) {
           console.log("per-experiment skipChance", options, _this.options);
           if (!((_ref4 = options.callbacks) != null ? _ref4.target : void 0)) {
-            options.callbacks = $.extend({}, options.callbacks || {}, {
+            options.callbacks = $.extend(true, {}, options.callbacks || {}, {
               target: function() {
                 return Math.random() < options.skipChance;
               }
             });
           }
         }
+        googleDefaults = {
+          googleAnalytics: {
+            enabled: _this.options.googleAnalytics.enabled,
+            viewEvent: options.uuid ? "" + options.uuid + "-view" : null,
+            conversionEvent: options.uuid ? "" + options.uuid + "-conversion" : null
+          }
+        };
         if (uuid && cssClass) {
-          options = $.extend({}, exptDefaults, options);
-          return _this.options.experiments[uuid] = options;
+          return expts[uuid] = $.extend(true, {}, exptDefaults, googleDefaults, options);
         } else {
           return _this.log("no uuid or CSS class", options, uuid, cssClass, sticky);
         }
       });
+      this.options.experiments = expts;
     }
 
     Myna.prototype.log = function() {
@@ -178,22 +195,48 @@ Myna = (function(window, document, $) {
     };
 
     Myna.prototype.exptOption = function(uuid, name, defaultFunc) {
+      var ans;
       if (defaultFunc == null) {
         defaultFunc = function() {
           return void 0;
         };
       }
-      return this.exptOptions(uuid)[name] || defaultFunc();
+      ans = this.exptOptions(uuid)[name];
+      if (ans != null) {
+        return ans;
+      } else {
+        return defaultFunc();
+      }
+    };
+
+    Myna.prototype.exptGoogleOption = function(uuid, name, defaultFunc) {
+      var ans, _ref;
+      if (defaultFunc == null) {
+        defaultFunc = function() {
+          return void 0;
+        };
+      }
+      ans = (_ref = this.exptOptions(uuid).googleAnalytics) != null ? _ref[name] : void 0;
+      if (ans != null) {
+        return ans;
+      } else {
+        return defaultFunc();
+      }
     };
 
     Myna.prototype.exptCallback = function(uuid, name, defaultFunc) {
-      var _ref;
+      var ans, _ref;
       if (defaultFunc == null) {
         defaultFunc = function() {
           return void 0;
         };
       }
-      return ((_ref = this.exptOptions(uuid).callbacks) != null ? _ref[name] : void 0) || defaultFunc();
+      ans = (_ref = this.exptOptions(uuid).callbacks) != null ? _ref[name] : void 0;
+      if (ans != null) {
+        return ans;
+      } else {
+        return defaultFunc();
+      }
     };
 
     Myna.prototype.target = function(uuid) {
@@ -357,6 +400,32 @@ Myna = (function(window, document, $) {
       }
     };
 
+    Myna.prototype.trackGoogleSuggestEvent = function(uuid, choice) {
+      var enabled, eventName;
+      enabled = this.exptGoogleOption(uuid, "enabled", (function() {
+        return true;
+      }));
+      eventName = this.exptGoogleOption(uuid, "viewEvent", (function() {
+        return "" + uuid + "-view";
+      }));
+      if (enabled) {
+        return typeof _gaq !== "undefined" && _gaq !== null ? _gaq.push(["_trackEvent", "myna", eventName, choice]) : void 0;
+      }
+    };
+
+    Myna.prototype.trackGoogleRewardEvent = function(uuid, choice) {
+      var enabled, eventName;
+      enabled = this.exptGoogleOption(uuid, "enabled", (function() {
+        return true;
+      }));
+      eventName = this.exptGoogleOption(uuid, "conversionEvent", (function() {
+        return "" + uuid + "-conversion";
+      }));
+      if (enabled) {
+        return typeof _gaq !== "undefined" && _gaq !== null ? _gaq.push(["_trackEvent", "myna", eventName, choice]) : void 0;
+      }
+    };
+
     Myna.prototype.suggestAjax = function(uuid, success, error) {
       var url, wrappedError, wrappedSuccess,
         _this = this;
@@ -367,6 +436,7 @@ Myna = (function(window, document, $) {
         if (data.typename === "suggestion") {
           stored = _this.saveSuggestion(uuid, data.choice, data.token, false, false);
           _this.log(" - suggest received and stored", stored);
+          _this.trackGoogleSuggestEvent(uuid, data.choice);
           success(stored);
         } else {
           _this.log(" - suggest received " + data.typename, data, textStatus, jqXHR);
@@ -432,6 +502,7 @@ Myna = (function(window, document, $) {
         if (data.typename === "ok") {
           _this.log("reward received ok", data, textStatus, jqXHR);
           stored = _this.saveSuggestion(uuid, choice, token, false, true);
+          _this.trackGoogleRewardEvent(uuid, choice);
           success(stored);
         } else {
           _this.log("reward received " + data.typename, data, textStatus, jqXHR);
