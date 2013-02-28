@@ -2,7 +2,7 @@
  * Myna for HTML v1.2 (no dependencies)
  * Copyright 2012 Myna Ltd
  * License: BSD 3-clause (http://opensource.org/licenses/BSD-3-Clause)
- * Published: 2013-02-22
+ * Published: 2013-02-28
  * Dependencies:
  *  - jQuery 1.5+ http://jquery.com/download
  *  - JSON.{parse,stringify} https://raw.github.com/douglascrockford/JSON-js/master/json2.js
@@ -136,7 +136,6 @@ Myna = (function(window, document, $) {
         cssClass = options['class'];
         sticky = options.sticky;
         if (options.skipChance) {
-          console.log("per-experiment skipChance", options, _this.options);
           if (!((_ref4 = options.callbacks) != null ? _ref4.target : void 0)) {
             options.callbacks = $.extend({}, options.callbacks || {}, {
               target: function() {

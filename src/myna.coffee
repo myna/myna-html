@@ -87,7 +87,6 @@ Myna = do (window, document, $ = jQuery) ->
 
         # TODO: remove skipChance when updating to v2 - this statement can be removed
         if options.skipChance
-          console.log("per-experiment skipChance", options, this.options)
           unless options.callbacks?.target
             options.callbacks = $.extend(
               {},
