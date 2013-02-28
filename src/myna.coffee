@@ -91,7 +91,6 @@ Myna = do (window, document, $ = jQuery) ->
 
         # TODO: remove skipChance when updating to v2 - this statement can be removed
         if options.skipChance
-          console.log("per-experiment skipChance", options, this.options)
           unless options.callbacks?.target
             options.callbacks = $.extend(
               true,
@@ -469,7 +468,6 @@ Myna = do (window, document, $ = jQuery) ->
         if data.typename == "ok"
           this.log("reward received ok", data, textStatus, jqXHR)
           stored = this.saveSuggestion(uuid, choice, token, false, true)
-          this.trackGoogleRewardEvent(uuid, choice)
           success(stored)
         else
           this.log("reward received #{data.typename}", data, textStatus, jqXHR)
@@ -483,6 +481,7 @@ Myna = do (window, document, $ = jQuery) ->
         error(jqXHR, textStatus, errorThrown)
         return
 
+      this.trackGoogleRewardEvent(uuid, choice)
       this.ajax(url, wrappedSuccess, wrappedError)
 
     # Reward Myna via JSONP.

@@ -256,7 +256,7 @@ describe("Google Analytics integration", function() {
     });
   });
 
-  it("should not record reward events if there is a server error", function() {
+  it("should still record reward events even if there is a server error", function() {
     var myna = Myna.init({
       timeout: 25,
       experiments: [
@@ -291,7 +291,8 @@ describe("Google Analytics integration", function() {
 
     runs(function() {
       expect(window._gaq).toEqual([
-        ['_trackEvent', 'myna', 'uuid1-view', 'variant1']
+        ['_trackEvent', 'myna', 'uuid1-view', 'variant1'],
+        ['_trackEvent', 'myna', 'uuid1-conversion', 'variant1']
       ]);
     });
   });

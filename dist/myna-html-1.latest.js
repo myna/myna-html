@@ -2,7 +2,7 @@
  * Myna for HTML v1.3 (standalone)
  * Copyright 2012 Myna Ltd
  * License: BSD 3-clause (http://opensource.org/licenses/BSD-3-Clause)
- * Published: 2013-02-27
+ * Published: 2013-02-28
  * Includes:
  *  - jQuery 1.8.2 http://jquery.com/download
  *  - JSON.{parse,stringify} https://raw.github.com/douglascrockford/JSON-js/master/json2.js
@@ -10149,7 +10149,6 @@ Myna = (function(window, document, $) {
         cssClass = options['class'];
         sticky = options.sticky;
         if (options.skipChance) {
-          console.log("per-experiment skipChance", options, _this.options);
           if (!((_ref4 = options.callbacks) != null ? _ref4.target : void 0)) {
             options.callbacks = $.extend(true, {}, options.callbacks || {}, {
               target: function() {
@@ -10505,7 +10504,6 @@ Myna = (function(window, document, $) {
         if (data.typename === "ok") {
           _this.log("reward received ok", data, textStatus, jqXHR);
           stored = _this.saveSuggestion(uuid, choice, token, false, true);
-          _this.trackGoogleRewardEvent(uuid, choice);
           success(stored);
         } else {
           _this.log("reward received " + data.typename, data, textStatus, jqXHR);
@@ -10518,6 +10516,7 @@ Myna = (function(window, document, $) {
         _this.deleteSuggestion(uuid);
         error(jqXHR, textStatus, errorThrown);
       };
+      this.trackGoogleRewardEvent(uuid, choice);
       return this.ajax(url, wrappedSuccess, wrappedError);
     };
 
