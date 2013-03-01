@@ -22,6 +22,8 @@ Myna = do (window, document, $ = jQuery) ->
       experiments:   []
       # TODO: remove skipChance when updating to v2 - this config option can be removed
       skipChance:    0.0 # ( deprecated - use callbacks.target instead )
+      googleAnalytics:
+        enabled:     true
       callbacks:
         # Callback, called just before a suggestion is saved to a cookie.
         # - single argument is data to be saved;
@@ -80,6 +82,8 @@ Myna = do (window, document, $ = jQuery) ->
                            () => true
         timeout:       this.options.timeout
 
+      expts = {}
+
       $.each this.options.experiments, (index, options) =>
         uuid     = options.uuid
         cssClass = options['class']
@@ -89,17 +93,30 @@ Myna = do (window, document, $ = jQuery) ->
         if options.skipChance
           unless options.callbacks?.target
             options.callbacks = $.extend(
+              true,
               {},
               options.callbacks || {},
               { target: () => Math.random() < options.skipChance }
             )
 
-        if uuid && cssClass
-          options = $.extend({}, exptDefaults, options)
+        googleDefaults =
+          googleAnalytics:
+            enabled:         this.options.googleAnalytics.enabled
+            viewEvent:       if options.uuid then "#{options.uuid}-view" else null
+            conversionEvent: if options.uuid then "#{options.uuid}-conversion" else null
 
-          this.options.experiments[uuid] = options
+        if uuid && cssClass
+          expts[uuid] = $.extend(
+            true,
+            {},
+            exptDefaults,
+            googleDefaults,
+            options
+          )
         else
           this.log("no uuid or CSS class", options, uuid, cssClass, sticky)
+
+      this.options.experiments = expts
 
     log: (args...) =>
       if this.options.debug
@@ -111,9 +128,9 @@ Myna = do (window, document, $ = jQuery) ->
 
     # Version of $().data that accepts a prefix as well as a key name.
     #
-    # jQuery string string -> any(string null)
-    data: (jq, prefix, name) ->
-      return jq.data(if prefix then "#{prefix}-#{name}" else name)
+    # jQuery any(string null) string -> any(string null)
+    data: (jq, prefix, name) =>
+      jq.data(if prefix then "#{prefix}-#{name}" else name)
 
     # Retrieve all options for an experiment.
     #
@@ -125,13 +142,22 @@ Myna = do (window, document, $ = jQuery) ->
     #
     # uuidString string [(-> any)] -> any
     exptOption: (uuid, name, defaultFunc = -> undefined) =>
-      this.exptOptions(uuid)[name] || defaultFunc()
+      ans = this.exptOptions(uuid)[name]
+      if ans? then ans else defaultFunc()
+
+    # Retrieve a Google Analytics option for an experiment.
+    #
+    # uuidString string [(-> any)] -> any
+    exptGoogleOption: (uuid, name, defaultFunc = -> undefined) =>
+      ans = this.exptOptions(uuid).googleAnalytics?[name]
+      if ans? then ans else defaultFunc()
 
     # Retrieve an option for an experiment.
     #
     # uuidString string [(-> any)] -> any
     exptCallback: (uuid, name, defaultFunc = -> undefined) =>
-      this.exptOptions(uuid).callbacks?[name] || defaultFunc()
+      ans = this.exptOptions(uuid).callbacks?[name]
+      if ans? then ans else defaultFunc()
 
     # Should we target the current user with the specified test?
     #
@@ -321,6 +347,22 @@ Myna = do (window, document, $ = jQuery) ->
       finally
         xhr
 
+    # Log a suggestion to Google Analytics if:
+    #  - GA integration is enabled for the specified experiment;
+    #  - GA is present on the web page.
+    trackGoogleSuggestEvent: (uuid, choice) =>
+      enabled = this.exptGoogleOption(uuid, "enabled", (-> true))
+      eventName = this.exptGoogleOption(uuid, "viewEvent", (-> "#{uuid}-view"))
+      if enabled then _gaq?.push ["_trackEvent", "myna", eventName, choice]
+
+    # Log a reward to Google Analytics if:
+    #  - GA integration is enabled for the specified experiment;
+    #  - GA is present on the web page.
+    trackGoogleRewardEvent: (uuid, choice) =>
+      enabled = this.exptGoogleOption(uuid, "enabled", (-> true))
+      eventName = this.exptGoogleOption(uuid, "conversionEvent", (-> "#{uuid}-conversion"))
+      if enabled then _gaq?.push ["_trackEvent", "myna", eventName, choice]
+
     # Obtain a suggestion from Myna via JSONP.
     #
     # uuidString successHandler errorHandler -> void
@@ -336,9 +378,11 @@ Myna = do (window, document, $ = jQuery) ->
       url = "#{this.options.apiRoot}/v1/experiment/#{uuid}/suggest"
 
       wrappedSuccess = (data, textStatus, jqXHR) =>
+
         if data.typename == "suggestion"
           stored = this.saveSuggestion(uuid, data.choice, data.token, false, false)
           this.log(" - suggest received and stored", stored)
+          this.trackGoogleSuggestEvent(uuid, data.choice)
           success(stored)
         else
           this.log(" - suggest received #{data.typename}", data, textStatus, jqXHR)
@@ -437,6 +481,7 @@ Myna = do (window, document, $ = jQuery) ->
         error(jqXHR, textStatus, errorThrown)
         return
 
+      this.trackGoogleRewardEvent(uuid, choice)
       this.ajax(url, wrappedSuccess, wrappedError)
 
     # Reward Myna via JSONP.
@@ -574,6 +619,7 @@ Myna = do (window, document, $ = jQuery) ->
       myna = this
       this.log("initGoals", cssClass, dataPrefix)
       this.eachVariantAndGoal cssClass, dataPrefix, (show, bind, goal) ->
+        myna.log("initGoals visiting", this, show, bind, goal)
         switch goal
           when "click"
             myna.on(this, "click", uuid)
