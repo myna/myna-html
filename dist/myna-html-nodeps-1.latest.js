@@ -2,7 +2,7 @@
  * Myna for HTML v1.3 (no dependencies)
  * Copyright 2012 Myna Ltd
  * License: BSD 3-clause (http://opensource.org/licenses/BSD-3-Clause)
- * Published: 2013-02-28
+ * Published: 2013-03-01
  * Dependencies:
  *  - jQuery 1.5+ http://jquery.com/download
  *  - JSON.{parse,stringify} https://raw.github.com/douglascrockford/JSON-js/master/json2.js
@@ -117,6 +117,8 @@ Myna = (function(window, document, $) {
       this.exptOption = __bind(this.exptOption, this);
 
       this.exptOptions = __bind(this.exptOptions, this);
+
+      this.data = __bind(this.data, this);
 
       this.error = __bind(this.error, this);
 
@@ -645,6 +647,7 @@ Myna = (function(window, document, $) {
       myna = this;
       this.log("initGoals", cssClass, dataPrefix);
       return this.eachVariantAndGoal(cssClass, dataPrefix, function(show, bind, goal) {
+        myna.log("initGoals visiting", this, show, bind, goal);
         switch (goal) {
           case "click":
             return myna.on(this, "click", uuid);

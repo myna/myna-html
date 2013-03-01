@@ -128,9 +128,9 @@ Myna = do (window, document, $ = jQuery) ->
 
     # Version of $().data that accepts a prefix as well as a key name.
     #
-    # jQuery string string -> any(string null)
-    data: (jq, prefix, name) ->
-      return jq.data(if prefix then "#{prefix}-#{name}" else name)
+    # jQuery any(string null) string -> any(string null)
+    data: (jq, prefix, name) =>
+      jq.data(if prefix then "#{prefix}-#{name}" else name)
 
     # Retrieve all options for an experiment.
     #
@@ -619,6 +619,7 @@ Myna = do (window, document, $ = jQuery) ->
       myna = this
       this.log("initGoals", cssClass, dataPrefix)
       this.eachVariantAndGoal cssClass, dataPrefix, (show, bind, goal) ->
+        myna.log("initGoals visiting", this, show, bind, goal)
         switch goal
           when "click"
             myna.on(this, "click", uuid)
