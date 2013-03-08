@@ -199,7 +199,7 @@ Google Analytics events have a *category*, an *action* and a *label*. The *categ
  - View events: `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa-view`
  - Conversion events: `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa-conversion`
 
-You can the settings for Google Analytics by adding a `googleAnalytics` configuration option to the copy-and-paste script in your page. For example:
+You can tweak the settings for Google Analytics by adding a `googleAnalytics` configuration option to the copy-and-paste script in your page. For example:
 
     Myna.init({ experiments: [{
       uuid: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
