@@ -228,7 +228,7 @@ You can also disable Google Analytics integration across *all* experiments using
 
 ### Targetting specific users
 
-My default, Myna targets all users in your tests. You may want to change this default if you want to target a certain percentage of your customer base or disable testing for particular groups of users on your site. You can do this by providing a *callback* function that Myna for HTML uses to determine whether a particular user should be involved in a test:
+By default, Myna targets all users in your tests. You may want to change this default if you want to target a certain percentage of your customer base or disable testing for particular groups of users on your site. You can do this by providing a *callback* function that Myna for HTML uses to determine whether a particular user should be targetted:
 
     Myna.init({
       callbacks: {
