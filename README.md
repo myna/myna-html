@@ -194,7 +194,7 @@ By now you know everything you need to use *Myna for HTML*. However, there are a
 
 By default, Myna for HTML records page views and conversions as [custom events](https://developers.google.com/analytics/devguides/collection/gajs/eventTrackerGuide) on Google Analytics. You can see your Myna data on Google by going to *Content > Events > Overview* in the sidebar.
 
-The category of each event is `myna`. By default, the action is based on the UUID of your experiment and the label is the variant name. For example, an experiment with UUID `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa` would create events with the following actions:
+Google Analytics events have a *category*, an *action* and a *label*. The *category* of all events from Myna for HTML is `myna`. By default, the *action* is based on the UUID of your experiment and the *label* is the variant name. For example, an experiment with UUID `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa` would create events with the following actions:
 
  - View events: `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa-view`
  - Conversion events: `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa-conversion`
