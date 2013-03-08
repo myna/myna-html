@@ -236,7 +236,7 @@ By default, Myna targets all users in your tests. You may want to change this de
           return /* ... */;   // Return true to include this user in the test
                               // or false to exclude them and show the default variant.
         }
-      }
+      },
       experiments: [{
         uuid: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
         class: 'myna',
@@ -257,7 +257,7 @@ Here's an example callback that includes 20% of your user base in the test:
 
 Here's an example that defers to another script:
 
-    var includeUserInTest = true; // another script sets this to true or false appropriately
+    var includeUserInTest = true; // another script sets this to true or false
 
     Myna.init({
       callbacks: {
@@ -267,6 +267,8 @@ Here's an example that defers to another script:
       },
       experiments: [ /* ... */ ]
     });
+
+If a user is excluded from the test, Myna for HTML shows them the default variant and does not record any experimental data for them.
 
 ### Experiment CSS classes
 
