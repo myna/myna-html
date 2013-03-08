@@ -190,6 +190,84 @@ Another common type of conversion goal is for the user to reach a specific page 
 
 By now you know everything you need to use *Myna for HTML*. However, there are a number of extra options to tweak things under the hood. Everything below is for power users!
 
+### Integration with Google Analytics
+
+By default, Myna for HTML records page views and conversions as [custom events](https://developers.google.com/analytics/devguides/collection/gajs/eventTrackerGuide) on Google Analytics. You can see your Myna data on Google by going to *Content > Events > Overview* in the sidebar.
+
+The category of each event is `myna`. By default, the action is based on the UUID of your experiment and the label is the variant name. For example, an experiment with UUID `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa` would create events with the following actions:
+
+ - View events: `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa-view`
+ - Conversion events: `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa-conversion`
+
+You can the settings for Google Analytics by adding a `googleAnalytics` configuration option to the copy-and-paste script in your page. For example:
+
+    Myna.init({ experiments: [{
+      uuid: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      class: 'myna',
+      default: 'variant1',
+      googleAnalytics: {
+        enabled: true,                           // toggle GA integration on/off
+                                                 //     (on by default)
+        viewEvent: 'my-event-action',            // set the view action
+        conversionEvent: 'my-other-event-action' // set the conversion action
+      }
+    }]})
+
+You can also disable Google Analytics integration across *all* experiments using a single configuration option:
+
+    Myna.init({
+      googleAnalytics: {
+        enabled: false
+      },
+      experiments: [
+        { /* experiment 1 */ },
+        { /* experiment 2 */ },
+        { /* and so on... */ }
+      ]
+    })
+
+### Targetting specific users
+
+My default, Myna targets all users in your tests. You may want to change this default if you want to target a certain percentage of your customer base or disable testing for particular groups of users on your site. You can do this by providing a *callback* function that Myna for HTML uses to determine whether a particular user should be involved in a test:
+
+    Myna.init({
+      callbacks: {
+        target: function() {
+          return /* ... */;   // Return true to include this user in the test
+                              // or false to exclude them and show the default variant.
+        }
+      }
+      experiments: [{
+        uuid: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        class: 'myna',
+        default: 'variant1'
+      }
+    ]})
+
+Here's an example callback that includes 20% of your user base in the test:
+
+    Myna.init({
+      callbacks: {
+        target: function() {
+          return Math.random() < 0.2;
+        }
+      },
+      experiments: [ /* ... */ ]
+    });
+
+Here's an example that defers to another script:
+
+    var includeUserInTest = true; // another script sets this to true or false appropriately
+
+    Myna.init({
+      callbacks: {
+        target: function() {
+          return includeUserInTest;
+        }
+      },
+      experiments: [ /* ... */ ]
+    });
+
 ### Experiment CSS classes
 
 The Myna dashboard suggests `myna` as the default CSS class for your experiment. You may need to change this if you are already using this class for something else, or if you are running multiple experiments on the same page (see below).
