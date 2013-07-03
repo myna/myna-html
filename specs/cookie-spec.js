@@ -112,7 +112,7 @@ describe("beforeSave", function() {
 
   it("should be able to customise the saved data", function() {
     var beforeSave = jasmine.createSpy("beforeSave").andCallFake(function(obj) {
-      return $.extend({ foo: 'bar' }, obj);
+      return Myna.$.extend({ foo: 'bar' }, obj);
     });
     var success = jasmine.createSpy("success");
     var error   = jasmine.createSpy("error");

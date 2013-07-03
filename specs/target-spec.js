@@ -55,7 +55,7 @@ describe("experiments with target() == false", function() {
     var success = jasmine.createSpy("success");
     var error   = jasmine.createSpy("error");
 
-    $("#experiments").html('<span class="expt2" data-show="variant1">V1</span>');
+    Myna.$("#experiments").html('<span class="expt2" data-show="variant1">V1</span>');
 
     runs(function() {
       this.myna.suggest('uuid2', success, error);
@@ -77,7 +77,7 @@ describe("experiments with target() == false", function() {
     var success = jasmine.createSpy("success");
     var error   = jasmine.createSpy("error");
 
-    $("#experiments").html('');
+    Myna.$("#experiments").html('');
 
     runs(function() {
       this.myna.suggest('uuid2', success, error);

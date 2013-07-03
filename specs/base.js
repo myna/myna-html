@@ -24,13 +24,13 @@ function fakeWorkingServer(options) {
       var choice = choices[choiceNum(params.url)];
       var token  = "token" + tokenNum(params.url);
 
-      return new $.Deferred().done(params.success).resolve({
+      return new Myna.$.Deferred().done(params.success).resolve({
         "typename" : "suggestion",
         "token"    : token,
         "choice"   : choice
       }).promise();
     } else if(/reward/.test(params.url)) {
-      return new $.Deferred().done(params.success).resolve({
+      return new Myna.$.Deferred().done(params.success).resolve({
         "typename" : "ok"
       }).promise();
     } else {
@@ -54,13 +54,13 @@ function fakeProblematicServer(options) {
       tokenNum   = tokenNum + 1;
       choiceNum  = (choiceNum + 1) % choices.length;
 
-      return new $.Deferred().done(params.success).resolve({
+      return new Myna.$.Deferred().done(params.success).resolve({
         "typename" : "suggestion",
         "token"    : token,
         "choice"   : choice
       }).promise();
     } else if(/reward/.test(params.url)) {
-      return new $.Deferred().done(params.success).resolve({
+      return new Myna.$.Deferred().done(params.success).resolve({
         "typename" : "problem",
         "subtype"  : 400,
         "messages" : [
@@ -76,13 +76,13 @@ function fakeProblematicServer(options) {
 
 function fakeOfflineServer(options) {
   return function(params) {
-    return new $.Deferred().done(params.success).promise();
+    return new Myna.$.Deferred().done(params.success).promise();
   }
 }
 
 function resetDom() {
-  $("#experiments *").each(function() {
-    var self = $(this);
+  Myna.$("#experiments *").each(function() {
+    var self = Myna.$(this);
 
     if(self.data("show")) {
       self.show();
