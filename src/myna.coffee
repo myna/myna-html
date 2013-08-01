@@ -31,14 +31,35 @@ Myna = do (window, document, $ = jQuery) ->
         #
         # object -> any(object, void)
         beforeSave: ((stored) -> stored)
-        # Callback, called whenever a suggestion is loaded from Myna or a cookie.
-        # - first argument is the suggestion data retrieved.
+        # Callback, called whenever a suggestion is loaded from Myna or a cookie,
+        # immediately before DOM elements with Myna data attributes are updated.
+        # Use it to perform custom variant set-up and tracking.
+        # - first argument is the suggestion data retrieved:
+        #     { uuid: string, choice string, token: string }
+        #     where uuid is the experiment UUID;
+        #           choice is the name of the suggested variant
+        #           token is the token to send back to Myna on reward
         # - second argument is a boolean:
         #   - true if the data was loaded from a cookie;
         #   - false if it came from Myna.
         #
         # object boolean -> void
         beforeSuggest: ((stored, fromCookie) ->)
+        # Callback, called whenever a suggestion is loaded from Myna or a cookie,
+        # immediately before DOM elements with Myna data attributes are updated.
+        # Use it to perform custom variant set-up and tracking.
+        # - first argument is the name of the suggested variant
+        # - second argument is the suggestion data retrieved from the cookie/Myna:
+        #     { uuid: string, choice string, token: string }
+        #     where uuid is the experiment UUID;
+        #           choice is the name of the suggested variant
+        #           token is the token to send back to Myna on reward
+        # - third argument is a boolean:
+        #   - true if the data was loaded from a cookie;
+        #   - false if it came from Myna.
+        #
+        # string -> boolean
+        suggest: ((variant, stored, fromCookie) ->)
         # Callback, called to determine whether a user should be targetted in a test.
         #
         # Accepts no arguments. Returns true (run the test) or false (skip the test).
@@ -72,6 +93,7 @@ Myna = do (window, document, $ = jQuery) ->
         callbacks:
           beforeSave:    this.options.callbacks?.beforeSave
           beforeSuggest: this.options.callbacks?.beforeSuggest
+          suggest:       this.options.callbacks?.suggest
           # TODO: remove skipChance when updating to v2 - this three-way conditional can be collapsed
           target:        if this.options.callbacks?.target
                            this.options.callbacks?.target
@@ -436,13 +458,16 @@ Myna = do (window, document, $ = jQuery) ->
 
       # callback for customising the behaviour of suggestions
       beforeSuggest = this.exptCallback(uuid, "beforeSuggest", (-> (->)))
+      afterSuggest  = this.exptCallback(uuid, "suggest", (-> (->)))
       successWrapper = (stored) ->
         beforeSuggest(stored, true)
         success(stored)
+        afterSuggest(stored.choice, stored, true)
 
       if stored
         beforeSuggest(stored, false)
         success(stored)
+        afterSuggest(stored.choice, stored, false)
       else if this.target(uuid)
         this.suggestAjax(uuid, successWrapper, error)
       else
