@@ -353,15 +353,16 @@ Myna = do (window, document, $ = jQuery) ->
     trackGoogleSuggestEvent: (uuid, choice) =>
       enabled = this.exptGoogleOption(uuid, "enabled", (-> true))
       eventName = this.exptGoogleOption(uuid, "viewEvent", (-> "#{uuid}-view"))
-      if enabled then _gaq?.push ["_trackEvent", "myna", eventName, choice]
+      if enabled then _gaq?.push ["_trackEvent", "myna", eventName, choice, null, false]
 
     # Log a reward to Google Analytics if:
     #  - GA integration is enabled for the specified experiment;
     #  - GA is present on the web page.
-    trackGoogleRewardEvent: (uuid, choice) =>
+    trackGoogleRewardEvent: (uuid, choice, amount) =>
       enabled = this.exptGoogleOption(uuid, "enabled", (-> true))
       eventName = this.exptGoogleOption(uuid, "conversionEvent", (-> "#{uuid}-conversion"))
-      if enabled then _gaq?.push ["_trackEvent", "myna", eventName, choice]
+      naturalAmount = Math.floor(amount * 100)
+      if enabled then _gaq?.push ["_trackEvent", "myna", eventName, choice, naturalAmount, true]
 
     # Obtain a suggestion from Myna via JSONP.
     #
@@ -481,7 +482,7 @@ Myna = do (window, document, $ = jQuery) ->
         error(jqXHR, textStatus, errorThrown)
         return
 
-      this.trackGoogleRewardEvent(uuid, choice)
+      this.trackGoogleRewardEvent(uuid, choice, amount)
       this.ajax(url, wrappedSuccess, wrappedError)
 
     # Reward Myna via JSONP.

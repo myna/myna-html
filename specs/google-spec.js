@@ -22,7 +22,7 @@ describe("Google Analytics integration", function() {
 
     runs(function() {
       expect(window._gaq).toEqual([
-        ['_trackEvent', 'myna', 'uuid1-view', 'variant1']
+        ['_trackEvent', 'myna', 'uuid1-view', 'variant1', null, false]
       ]);
 
       myna.suggest('uuid1', success, error);
@@ -32,8 +32,8 @@ describe("Google Analytics integration", function() {
 
     runs(function() {
       expect(window._gaq).toEqual([
-        ['_trackEvent', 'myna', 'uuid1-view', 'variant1'],
-        ['_trackEvent', 'myna', 'uuid1-view', 'variant2']
+        ['_trackEvent', 'myna', 'uuid1-view', 'variant1', null, false],
+        ['_trackEvent', 'myna', 'uuid1-view', 'variant2', null, false]
       ]);
     });
   });
@@ -61,7 +61,7 @@ describe("Google Analytics integration", function() {
 
     runs(function() {
       expect(window._gaq).toEqual([
-        ['_trackEvent', 'myna', 'uuid1-view', 'variant1']
+        ['_trackEvent', 'myna', 'uuid1-view', 'variant1', null, false]
       ]);
 
       myna.suggest('uuid1', success, error);
@@ -71,7 +71,7 @@ describe("Google Analytics integration", function() {
 
     runs(function() {
       expect(window._gaq).toEqual([
-        ['_trackEvent', 'myna', 'uuid1-view', 'variant1']
+        ['_trackEvent', 'myna', 'uuid1-view', 'variant1', null, false]
       ]);
     });
   });
@@ -135,7 +135,7 @@ describe("Google Analytics integration", function() {
 
     runs(function() {
       expect(window._gaq).toEqual([
-        ['_trackEvent', 'myna', 'uuid1-view', 'variant1']
+        ['_trackEvent', 'myna', 'uuid1-view', 'variant1', null, false]
       ]);
 
       myna.reward('uuid1', 1.0, success, error);
@@ -145,8 +145,8 @@ describe("Google Analytics integration", function() {
 
     runs(function() {
       expect(window._gaq).toEqual([
-        ['_trackEvent', 'myna', 'uuid1-view', 'variant1'],
-        ['_trackEvent', 'myna', 'uuid1-conversion', 'variant1']
+        ['_trackEvent', 'myna', 'uuid1-view', 'variant1', null, false],
+        ['_trackEvent', 'myna', 'uuid1-conversion', 'variant1', 100, true]
       ]);
 
       myna.suggest('uuid1');
@@ -156,22 +156,22 @@ describe("Google Analytics integration", function() {
 
     runs(function() {
       expect(window._gaq).toEqual([
-        ['_trackEvent', 'myna', 'uuid1-view', 'variant1'],
-        ['_trackEvent', 'myna', 'uuid1-conversion', 'variant1'],
-        ['_trackEvent', 'myna', 'uuid1-view', 'variant2']
+        ['_trackEvent', 'myna', 'uuid1-view', 'variant1', null, false],
+        ['_trackEvent', 'myna', 'uuid1-conversion', 'variant1', 100, true],
+        ['_trackEvent', 'myna', 'uuid1-view', 'variant2', null, false]
       ]);
 
-      myna.reward('uuid1', 1.0, success, error);
+      myna.reward('uuid1', 0.8, success, error);
     });
 
     waits(myna.options.timeout);
 
     runs(function() {
       expect(window._gaq).toEqual([
-        ['_trackEvent', 'myna', 'uuid1-view', 'variant1'],
-        ['_trackEvent', 'myna', 'uuid1-conversion', 'variant1'],
-        ['_trackEvent', 'myna', 'uuid1-view', 'variant2'],
-        ['_trackEvent', 'myna', 'uuid1-conversion', 'variant2']
+        ['_trackEvent', 'myna', 'uuid1-view', 'variant1', null, false],
+        ['_trackEvent', 'myna', 'uuid1-conversion', 'variant1', 100, true],
+        ['_trackEvent', 'myna', 'uuid1-view', 'variant2', null, false],
+        ['_trackEvent', 'myna', 'uuid1-conversion', 'variant2', 80, true]
       ]);
     });
   });
@@ -229,7 +229,7 @@ describe("Google Analytics integration", function() {
 
     runs(function() {
       expect(window._gaq).toEqual([
-        ['_trackEvent', 'myna', 'uuid1-view', 'variant1']
+        ['_trackEvent', 'myna', 'uuid1-view', 'variant1', null, false]
       ]);
 
       myna.reward('uuid1');
@@ -239,8 +239,8 @@ describe("Google Analytics integration", function() {
 
     runs(function() {
       expect(window._gaq).toEqual([
-        ['_trackEvent', 'myna', 'uuid1-view', 'variant1'],
-        ['_trackEvent', 'myna', 'uuid1-conversion', 'variant1']
+        ['_trackEvent', 'myna', 'uuid1-view', 'variant1', null, false],
+        ['_trackEvent', 'myna', 'uuid1-conversion', 'variant1', 100, true]
       ]);
 
       myna.reward('uuid1');
@@ -250,8 +250,8 @@ describe("Google Analytics integration", function() {
 
     runs(function() {
       expect(window._gaq).toEqual([
-        ['_trackEvent', 'myna', 'uuid1-view', 'variant1'],
-        ['_trackEvent', 'myna', 'uuid1-conversion', 'variant1']
+        ['_trackEvent', 'myna', 'uuid1-view', 'variant1', null, false],
+        ['_trackEvent', 'myna', 'uuid1-conversion', 'variant1', 100, true]
       ]);
     });
   });
@@ -281,7 +281,7 @@ describe("Google Analytics integration", function() {
 
     runs(function() {
       expect(window._gaq).toEqual([
-        ['_trackEvent', 'myna', 'uuid1-view', 'variant1']
+        ['_trackEvent', 'myna', 'uuid1-view', 'variant1', null, false]
       ]);
 
       myna.reward('uuid1', 1.0, success, error);
@@ -291,8 +291,8 @@ describe("Google Analytics integration", function() {
 
     runs(function() {
       expect(window._gaq).toEqual([
-        ['_trackEvent', 'myna', 'uuid1-view', 'variant1'],
-        ['_trackEvent', 'myna', 'uuid1-conversion', 'variant1']
+        ['_trackEvent', 'myna', 'uuid1-view', 'variant1', null, false],
+        ['_trackEvent', 'myna', 'uuid1-conversion', 'variant1', 100, true]
       ]);
     });
   });

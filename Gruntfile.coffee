@@ -2,20 +2,18 @@
 module.exports = (grunt) ->
   pkg = grunt.file.readJSON("package.json")
 
-  name = pkg.name
-
-  jasminePort = 8001
-
-  series = pkg.series
-
+  name        = pkg.name
+  series      = pkg.series
   # Grunt 0.3 allows version numbers of the format "x.y".
   # Grunt 0.4 requires "x.y.z".
   # For backwards compatibility we strip the last ".0" off.
-  version =
-    if /\.0$/.test(pkg.version)
-      pkg.version.substring(0, pkg.version.length - 2)
-    else
-      pkg.version
+  version     = if /\.0$/.test(pkg.version)
+                  pkg.version.substring(0, pkg.version.length - 2)
+                else
+                  pkg.version
+
+  jasminePort = 8001
+
 
   standaloneBanner =
     """
@@ -68,6 +66,7 @@ module.exports = (grunt) ->
       options:
         host: "http://127.0.0.1:#{jasminePort}/"
         outfile: "myna-html-specrunner.html"
+        keepRunner: true
         specs: "specs/*spec.js"
         template: "specs/specrunner.template.html"
       standalone:
